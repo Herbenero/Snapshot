@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Domino Darts</title>
+<style>
+:root{
+  --bg:#0f172a;
+  --panel:#111827;
+  --card:#1f2937;
+  --accent:#f59e0b;
+  --green:#16a34a;
+  --blue:#2563eb;
+  --red:#dc2626;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  background:#020617;
+  padding:16px;
+  text-align:center;
+  border-bottom:2px solid var(--accent);
+}
+h1{margin:0;font-size:2rem;color:var(--accent)}
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
+}
+.card{
+  background:var(--panel);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+label{display:block;margin-top:10px;margin-bottom:6px;font-weight:bold}
+input,select{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #334155;
+  background:#0b1220;
+  color:var(--text);
+}
+button{
+  border:none;
+  border-radius:10px;
+  padding:12px 16px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.15s;
+}
+button:hover{transform:translateY(-1px)}
+.primary{background:var(--accent);color:#111827}
+.secondary{background:#334155;color:var(--text)}
+.danger{background:var(--red);color:white}
+.success{background:var(--green);color:white}
+
+#gameScreen{display:none}
+
+.infoGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+}
+.infoBox{
+  background:var(--card);
+  padding:12px;
+  border-radius:12px;
+  text-align:center;
+}
+.infoBox .label{font-size:.85rem;color:var(--muted)}
+.infoBox .value{font-size:1.3rem;font-weight:bold;margin-top:4px}
+
+.players{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:12px;
+}
+.playerCard{
+  background:var(--card);
+  border-radius:12px;
+  padding:12px;
+  border:2px solid transparent;
+}
+.playerCard.active{border-color:var(--accent)}
+
+.dominoChain{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.domino{
+  width:78px;
+  height:44px;
+  border-radius:10px;
+  background:#f8fafc;
+  color:#111827;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 8px;
+  font-weight:bold;
+  position:relative;
+}
+.domino::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:5px;
+  bottom:5px;
+  width:2px;
+  background:#111827;
+}
+.domino.completed{
+  background:#16a34a;
+  color:white;
+}
+.domino.completed::after{background:white}
+.domino.current{
+  background:#f59e0b;
+  color:#111827;
+}
+
+#currentDomino{
+  display:flex;
+  justify-content:center;
+  margin:16px 0;
+}
+#currentDomino .domino{
+  width:150px;
+  height:84px;
+  font-size:1.4rem;
+  border-radius:16px;
+}
+
+.numberGrid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
+.numBtn{
+  background:#1e293b;
+  color:white;
+  font-size:1.1rem;
+  min-height:54px;
+}
+.numBtn:hover{background:#334155}
+
+.multiplierRow{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+.multBtn{background:#2563eb;color:white}
+.multBtn.active{outline:3px solid #93c5fd}
+
+.actionRow{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:14px;
+}
+
+#winnerBanner{
+  display:none;
+  text-align:center;
+  background:linear-gradient(135deg,#16a34a,#22c55e);
+  color:white;
+  padding:22px;
+  border-radius:16px;
+  margin-bottom:16px;
+}
+#winnerBanner h2{margin:0;font-size:2rem}
+
+@media(max-width:700px){
+  .numberGrid{grid-template-columns:repeat(4,1fr)}
+  .multiplierRow{grid-template-columns:repeat(2,1fr)}
+  .actionRow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎯 Domino Darts</h1>
+</header>
+
+<div class="container">
+
+  <div id="setupScreen" class="card">
+    <h2>New Game</h2>
+
+    <label>Board Type</label>
+    <select id="boardType">
+      <option value="basic">Basic Board</option>
+      <option value="quad">Quad Board</option>
+    </select>
+
+    <label>Dominoes Per Player</label>
+    <select id="dominoCount">
+      <option value="5">5 Dominoes</option>
+      <option value="7" selected>7 Dominoes</option>
+      <option value="10">10 Dominoes</option>
+      <option value="15">15 Dominoes</option>
+    </select>
+
+    <label>Player 1</label><input id="p1" value="Player 1">
+    <label>Player 2</label><input id="p2" value="Player 2">
+    <label>Player 3</label><input id="p3" placeholder="Optional">
+    <label>Player 4</label><input id="p4" placeholder="Optional">
+
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <button class="primary" onclick="startGame()">Start Game</button>
+      <button class="secondary" onclick="loadGame()">Resume Saved Game</button>
+    </div>
+  </div>
+
+  <div id="gameScreen">
+
+    <div id="winnerBanner">
+      <h2 id="winnerText"></h2>
+      <p id="winnerSub"></p>
+      <button class="primary" onclick="newGame()">New Game</button>
+    </div>
+
+    <div class="card infoGrid">
+      <div class="infoBox"><div class="label">Current Player</div><div class="value" id="currentPlayer"></div></div>
+      <div class="infoBox"><div class="label">Turn</div><div class="value" id="turnNumber">1</div></div>
+      <div class="infoBox"><div class="label">Darts Remaining</div><div class="value" id="dartsRemaining">3</div></div>
+      <div class="infoBox"><div class="label">Board</div><div class="value" id="boardDisplay"></div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="text-align:center;margin-top:0">Current Domino</h2>
+      <div id="currentDomino"></div>
+      <div id="dominoProgress" style="text-align:center;color:var(--muted);font-weight:bold"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Players</h2>
+      <div id="playersArea" class="players"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Enter Dart</h2>
+
+      <div class="numberGrid" id="numberGrid"></div>
+
+      <div class="multiplierRow" id="multiplierRow"></div>
+
+      <div class="actionRow">
+        <button class="secondary" onclick="recordMiss()">Miss</button>
+        <button class="secondary" onclick="undo()">Undo</button>
+        <button class="danger" onclick="endTurn()">End Turn</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Statistics</h2>
+      <div id="statsArea"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let state = null;
+let selectedNumber = null;
+let selectedMultiplier = 1;
+
+function connectedChain(count){
+  const nums = [...Array(20).keys()].map(i=>i+1);
+  nums.push('Bull');
+  const chain = [];
+  let current = nums[Math.floor(Math.random()*nums.length)];
+  for(let i=0;i<count;i++){
+    const next = nums[Math.floor(Math.random()*nums.length)];
+    chain.push([current,next]);
+    current = next;
+  }
+  return chain;
+}
+
+function startGame(){
+  const names = ['p1','p2','p3','p4']
+    .map(id=>document.getElementById(id).value.trim())
+    .filter(Boolean);
+
+  if(names.length < 2){
+    alert('Enter at least two players.');
+    return;
+  }
+
+  const count = parseInt(document.getElementById('dominoCount').value);
+  const board = document.getElementById('boardType').value;
+
+  state = {
+    boardType: board,
+    turn:1,
+    currentPlayer:0,
+    dartsRemaining:3,
+    selectedNumber:null,
+    selectedMultiplier:1,
+    history:[],
+    players:names.map(name=>({
+      name,
+      chain:connectedChain(count),
+      currentIndex:0,
+      progress:[false,false],
+      stats:{
+        darts:0,singles:0,doubles:0,triples:0,quads:0,misses:0,completed:0
+      }
+    }))
+  };
+
+  saveGame();
+  showGame();
+}
+
+function showGame(){
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('gameScreen').style.display='block';
+
+  buildNumberButtons();
+  buildMultiplierButtons();
+  render();
+}
+
+function buildNumberButtons(){
+  const grid = document.getElementById('numberGrid');
+  grid.innerHTML='';
+  for(let i=1;i<=20;i++){
+    const b=document.createElement('button');
+    b.className='numBtn';
+    b.textContent=i;
+    b.onclick=()=>selectNumber(i);
+    grid.appendChild(b);
+  }
+  const bull=document.createElement('button');
+  bull.className='numBtn';
+  bull.textContent='Bull';
+  bull.onclick=()=>selectNumber('Bull');
+  grid.appendChild(bull);
+}
+
+function buildMultiplierButtons(){
+  const row=document.getElementById('multiplierRow');
+  row.innerHTML='';
+
+  const multipliers=[
+    {label:'Single',value:1},
+    {label:'Double',value:2},
+    {label:'Triple',value:3},
+  ];
+
+  if(state.boardType==='quad'){
+    multipliers.push({label:'Quad',value:4});
+  }
+
+  multipliers.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='multBtn'+(m.value===1?' active':'');
+    b.textContent=m.label;
+    b.onclick=()=>selectMultiplier(m.value,b);
+    row.appendChild(b);
+  });
+}
+
+function selectNumber(n){
+  selectedNumber=n;
+  attemptThrow();
+}
+
+function selectMultiplier(v,btn){
+  selectedMultiplier=v;
+  document.querySelectorAll('.multBtn').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function attemptThrow(){
+  if(selectedNumber===null) return;
+  recordThrow(selectedNumber,selectedMultiplier);
+  selectedNumber=null;
+}
+
+function currentPlayerObj(){
+  return state.players[state.currentPlayer];
+}
+
+function currentDomino(){
+  const p=currentPlayerObj();
+  return p.chain[p.currentIndex];
+}
+
+function recordThrow(number,mult){
+  const p=currentPlayerObj();
+
+  state.history.push(JSON.stringify(state));
+
+  p.stats.darts++;
+  if(mult===1)p.stats.singles++;
+  if(mult===2)p.stats.doubles++;
+  if(mult===3)p.stats.triples++;
+  if(mult===4)p.stats.quads++;
+
+  const dom=currentDomino();
+  if(!dom){ return; }
+
+  if(number===dom[0] && !p.progress[0]){
+    p.progress[0]=true;
+  }else if(number===dom[1] && !p.progress[1]){
+    p.progress[1]=true;
+  }
+
+  state.dartsRemaining--;
+
+  if(p.progress[0] && p.progress[1]){
+    p.stats.completed++;
+    p.currentIndex++;
+    p.progress=[false,false];
+
+    if(p.currentIndex >= p.chain.length){
+      saveGame();
+      render();
+      declareWinner(p);
+      return;
+    }
+  }
+
+  if(state.dartsRemaining<=0){
+    nextPlayer();
+  }
+
+  saveGame();
+  render();
+}
+
+function recordMiss(){
+  const p=currentPlayerObj();
+  state.history.push(JSON.stringify(state));
+  p.stats.darts++;
+  p.stats.misses++;
+  state.dartsRemaining--;
+  if(state.dartsRemaining<=0) nextPlayer();
+  saveGame();
+  render();
+}
+
+function undo(){
+  if(!state.history.length) return;
+  state = JSON.parse(state.history.pop());
+  render();
+  saveGame();
+}
+
+function endTurn(){
+  nextPlayer();
+  saveGame();
+  render();
+}
+
+function nextPlayer(){
+  state.currentPlayer=(state.currentPlayer+1)%state.players.length;
+  state.dartsRemaining=3;
+  if(state.currentPlayer===0) state.turn++;
+}
+
+function declareWinner(player){
+  document.getElementById('winnerBanner').style.display='block';
+  document.getElementById('winnerText').textContent='🏆 '+player.name+' Wins!';
+  document.getElementById('winnerSub').textContent=
+    'Completed '+player.chain.length+' dominoes in '+player.stats.darts+' darts.';
+  localStorage.removeItem('dominoDartsSave');
+}
+
+function render(){
+  document.getElementById('currentPlayer').textContent=currentPlayerObj().name;
+  document.getElementById('turnNumber').textContent=state.turn;
+  document.getElementById('dartsRemaining').textContent=state.dartsRemaining;
+  document.getElementById('boardDisplay').textContent=
+    state.boardType==='quad' ? 'Quad Board' : 'Basic Board';
+
+  renderCurrentDomino();
+  renderPlayers();
+  renderStats();
+}
+
+function dominoHTML(a,b,cls=''){
+  return `<div class="domino ${cls}"><span>${a}</span><span>${b}</span></div>`;
+}
+
+function renderCurrentDomino(){
+  const area=document.getElementById('currentDomino');
+  const prog=document.getElementById('dominoProgress');
+  const p=currentPlayerObj();
+  const dom=currentDomino();
+
+  if(!dom){
+    area.innerHTML='<div class="domino completed"><span>✔</span><span>✔</span></div>';
+    prog.textContent='Chain complete!';
+    return;
+  }
+
+  area.innerHTML=dominoHTML(dom[0],dom[1],'current');
+  prog.textContent=
+    (p.progress[0]?'✔ ':'⬜ ')+dom[0]+'   |   '+
+    (p.progress[1]?'✔ ':'⬜ ')+dom[1];
+}
+
+function renderPlayers(){
+  const area=document.getElementById('playersArea');
+  area.innerHTML='';
+
+  state.players.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='playerCard'+(i===state.currentPlayer?' active':'');
+    let html=`<h3 style="margin-top:0">${p.name}</h3>`;
+    html+=`<div style="color:var(--muted);font-size:.9rem">${p.currentIndex}/${p.chain.length} completed</div>`;
+    html+=`<div class="dominoChain">`;
+
+    p.chain.forEach((d,idx)=>{
+      let cls='';
+      if(idx<p.currentIndex) cls='completed';
+      else if(idx===p.currentIndex) cls='current';
+      html+=dominoHTML(d[0],d[1],cls);
+    });
+
+    html+='</div>';
+    card.innerHTML=html;
+    area.appendChild(card);
+  });
+}
+
+function renderStats(){
+  let html='<table style="width:100%;border-collapse:collapse">';
+  html+='<tr><th style="text-align:left;padding:6px">Player</th><th>Darts</th><th>Comp</th><th>Miss</th></tr>';
+  state.players.forEach(p=>{
+    html+=`<tr>
+      <td style="padding:6px">${p.name}</td>
+      <td style="text-align:center">${p.stats.darts}</td>
+      <td style="text-align:center">${p.stats.completed}</td>
+      <td style="text-align:center">${p.stats.misses}</td>
+    </tr>`;
+  });
+  html+='</table>';
+  document.getElementById('statsArea').innerHTML=html;
+}
+
+function saveGame(){
+  localStorage.setItem('dominoDartsSave',JSON.stringify(state));
+}
+
+function loadGame(){
+  const raw=localStorage.getItem('dominoDartsSave');
+  if(!raw){
+    alert('No saved game found.');
+    return;
+  }
+  state=JSON.parse(raw);
+  showGame();
+}
+
+function newGame(){
+  localStorage.removeItem('dominoDartsSave');
+  location.reload();
+}
+</script>
+</body>
+</html>
