@@ -1,580 +1,649 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Domino Darts</title>
-<style>
-:root{
-  --bg:#0f172a;
-  --panel:#111827;
-  --card:#1f2937;
-  --accent:#f59e0b;
-  --green:#16a34a;
-  --blue:#2563eb;
-  --red:#dc2626;
-  --text:#f8fafc;
-  --muted:#94a3b8;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-header{
-  background:#020617;
-  padding:16px;
-  text-align:center;
-  border-bottom:2px solid var(--accent);
-}
-h1{margin:0;font-size:2rem;color:var(--accent)}
-.container{
-  max-width:1200px;
-  margin:auto;
-  padding:16px;
-}
-.card{
-  background:var(--panel);
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.35);
-}
-label{display:block;margin-top:10px;margin-bottom:6px;font-weight:bold}
-input,select{
-  width:100%;
-  padding:10px;
-  border-radius:8px;
-  border:1px solid #334155;
-  background:#0b1220;
-  color:var(--text);
-}
-button{
-  border:none;
-  border-radius:10px;
-  padding:12px 16px;
-  font-weight:bold;
-  cursor:pointer;
-  transition:.15s;
-}
-button:hover{transform:translateY(-1px)}
-.primary{background:var(--accent);color:#111827}
-.secondary{background:#334155;color:var(--text)}
-.danger{background:var(--red);color:white}
-.success{background:var(--green);color:white}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Domino Darts</title>
+  <style>
+    :root {
+      --bg-color: #1a1a24;
+      --card-bg: #262636;
+      --accent: #ff4757;
+      --accent-hover: #ff6b81;
+      --green: #2ed573;
+      --text: #ffffff;
+      --text-dim: #a4b0be;
+      --border-radius: 12px;
+    }
 
-#gameScreen{display:none}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-.infoGrid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;
-}
-.infoBox{
-  background:var(--card);
-  padding:12px;
-  border-radius:12px;
-  text-align:center;
-}
-.infoBox .label{font-size:.85rem;color:var(--muted)}
-.infoBox .value{font-size:1.3rem;font-weight:bold;margin-top:4px}
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
 
-.players{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:12px;
-}
-.playerCard{
-  background:var(--card);
-  border-radius:12px;
-  padding:12px;
-  border:2px solid transparent;
-}
-.playerCard.active{border-color:var(--accent)}
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-.dominoChain{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:10px;
-}
-.domino{
-  width:78px;
-  height:44px;
-  border-radius:10px;
-  background:#f8fafc;
-  color:#111827;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 8px;
-  font-weight:bold;
-  position:relative;
-}
-.domino::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:5px;
-  bottom:5px;
-  width:2px;
-  background:#111827;
-}
-.domino.completed{
-  background:#16a34a;
-  color:white;
-}
-.domino.completed::after{background:white}
-.domino.current{
-  background:#f59e0b;
-  color:#111827;
-}
+    header h1 {
+      font-size: 2.5rem;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
 
-#currentDomino{
-  display:flex;
-  justify-content:center;
-  margin:16px 0;
-}
-#currentDomino .domino{
-  width:150px;
-  height:84px;
-  font-size:1.4rem;
-  border-radius:16px;
-}
+    header p {
+      color: var(--text-dim);
+    }
 
-.numberGrid{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:10px;
-}
-.numBtn{
-  background:#1e293b;
-  color:white;
-  font-size:1.1rem;
-  min-height:54px;
-}
-.numBtn:hover{background:#334155}
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
 
-.multiplierRow{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  margin-top:12px;
-}
-.multBtn{background:#2563eb;color:white}
-.multBtn.active{outline:3px solid #93c5fd}
+    /* Setup Screen */
+    .setup-card {
+      background-color: var(--card-bg);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
 
-.actionRow{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin-top:14px;
-}
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
 
-#winnerBanner{
-  display:none;
-  text-align:center;
-  background:linear-gradient(135deg,#16a34a,#22c55e);
-  color:white;
-  padding:22px;
-  border-radius:16px;
-  margin-bottom:16px;
-}
-#winnerBanner h2{margin:0;font-size:2rem}
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #3d3d5c;
+      background: #1a1a24;
+      color: #fff;
+      font-size: 1rem;
+    }
 
-@media(max-width:700px){
-  .numberGrid{grid-template-columns:repeat(4,1fr)}
-  .multiplierRow{grid-template-columns:repeat(2,1fr)}
-  .actionRow{grid-template-columns:1fr}
-}
-</style>
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .player-list {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+
+    .player-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1a1a24;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .remove-btn {
+      background: #ff4757;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+    }
+
+    .options-group {
+      border-top: 1px solid #3d3d5c;
+      padding-top: 15px;
+      margin-bottom: 20px;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    /* Game Screen */
+    .game-screen {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .turn-bar {
+      background: var(--card-bg);
+      padding: 15px 20px;
+      border-radius: var(--border-radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .active-player {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .dart-tracker {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dart-pip {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3d3d5c;
+    }
+
+    .dart-pip.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .board-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .board-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .main-panel, .side-panel {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+    }
+
+    /* Target Domino */
+    .target-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .domino-large {
+      display: inline-flex;
+      background: #fff;
+      color: #000;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 2.5rem;
+      font-weight: bold;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+      margin-top: 10px;
+    }
+
+    .domino-half {
+      padding: 0 15px;
+      border-right: 3px solid #000;
+    }
+
+    .domino-half:last-child {
+      border-right: none;
+    }
+
+    .domino-half.hit {
+      background-color: var(--green);
+      color: #fff;
+      border-radius: 4px;
+    }
+
+    /* Numpad Input */
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .numpad button {
+      background: #1a1a24;
+      padding: 15px 5px;
+      font-size: 1.1rem;
+      border: 1px solid #3d3d5c;
+    }
+
+    .numpad button:hover {
+      background: #3d3d5c;
+    }
+
+    /* Player Chain */
+    .domino-chain {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .domino-mini {
+      display: inline-flex;
+      background: #fff;
+      color: #000;
+      font-size: 0.85rem;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .domino-mini span {
+      padding: 0 3px;
+    }
+
+    .domino-mini span:first-child {
+      border-right: 1px solid #000;
+    }
+
+    .wild-btn {
+      background: #eccc68;
+      color: #000;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .wild-btn:hover {
+      background: #ffa502;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>🎯 Domino Darts</h1>
-</header>
 
-<div class="container">
+  <header>
+    <h1>🎯 Domino Darts</h1>
+    <p>Connect your dominoes to win!</p>
+  </header>
 
-  <div id="setupScreen" class="card">
-    <h2>New Game</h2>
+  <div class="container">
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="setup-card">
+      <h2>Game Setup</h2>
+      <br>
+      <div class="input-group">
+        <input type="text" id="player-name-input" placeholder="Enter player name" />
+        <button id="add-player-btn">Add Player</button>
+      </div>
 
-    <label>Board Type</label>
-    <select id="boardType">
-      <option value="basic">Basic Board</option>
-      <option value="quad">Quad Board</option>
-    </select>
+      <ul id="player-list" class="player-list"></ul>
 
-    <label>Dominoes Per Player</label>
-    <select id="dominoCount">
-      <option value="5">5 Dominoes</option>
-      <option value="7" selected>7 Dominoes</option>
-      <option value="10">10 Dominoes</option>
-      <option value="15">15 Dominoes</option>
-    </select>
+      <div class="options-group">
+        <h3>Optional Rules</h3>
+        <br>
+        <label class="checkbox-label">
+          <input type="checkbox" id="rule-chain" checked />
+          Chain Reaction (Remaining darts carry over if next domino matches)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="rule-doubles" checked />
+          Doubles Bonus (Single double-hit finishes a double domino)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="rule-wild" checked />
+          Wild Domino (1 wildcard per player)
+        </label>
+      </div>
 
-    <label>Player 1</label><input id="p1" value="Player 1">
-    <label>Player 2</label><input id="p2" value="Player 2">
-    <label>Player 3</label><input id="p3" placeholder="Optional">
-    <label>Player 4</label><input id="p4" placeholder="Optional">
-
-    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
-      <button class="primary" onclick="startGame()">Start Game</button>
-      <button class="secondary" onclick="loadGame()">Resume Saved Game</button>
-    </div>
-  </div>
-
-  <div id="gameScreen">
-
-    <div id="winnerBanner">
-      <h2 id="winnerText"></h2>
-      <p id="winnerSub"></p>
-      <button class="primary" onclick="newGame()">New Game</button>
+      <button id="start-game-btn" style="width: 100%;">Start Game</button>
     </div>
 
-    <div class="card infoGrid">
-      <div class="infoBox"><div class="label">Current Player</div><div class="value" id="currentPlayer"></div></div>
-      <div class="infoBox"><div class="label">Turn</div><div class="value" id="turnNumber">1</div></div>
-      <div class="infoBox"><div class="label">Darts Remaining</div><div class="value" id="dartsRemaining">3</div></div>
-      <div class="infoBox"><div class="label">Board</div><div class="value" id="boardDisplay"></div></div>
-    </div>
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="game-screen">
+      <div class="turn-bar">
+        <div>
+          <span style="color: var(--text-dim);">Current Turn:</span>
+          <div id="active-player-name" class="active-player">Player 1</div>
+        </div>
+        <div>
+          <span style="color: var(--text-dim); display: block; margin-bottom: 5px; text-align: right;">Darts Left</span>
+          <div class="dart-tracker">
+            <div class="dart-pip active" id="dart-1"></div>
+            <div class="dart-pip active" id="dart-2"></div>
+            <div class="dart-pip active" id="dart-3"></div>
+          </div>
+        </div>
+      </div>
 
-    <div class="card">
-      <h2 style="text-align:center;margin-top:0">Current Domino</h2>
-      <div id="currentDomino"></div>
-      <div id="dominoProgress" style="text-align:center;color:var(--muted);font-weight:bold"></div>
-    </div>
+      <div class="board-grid">
+        <!-- Input & Current Target -->
+        <div class="main-panel">
+          <div class="target-container">
+            <p style="color: var(--text-dim);">Target Domino (<span id="domino-progress">1</span>/7)</p>
+            <div id="target-domino" class="domino-large">
+              <div id="target-side-1" class="domino-half">?</div>
+              <div id="target-side-2" class="domino-half">?</div>
+            </div>
+            <div style="margin-top: 10px;">
+              <button id="use-wild-btn" class="wild-btn hidden">Use Wildcard Domino</button>
+            </div>
+          </div>
 
-    <div class="card">
-      <h2 style="margin-top:0">Players</h2>
-      <div id="playersArea" class="players"></div>
-    </div>
+          <p style="text-align: center; margin-bottom: 10px; color: var(--text-dim);">Enter Dart Hit:</p>
+          <div class="numpad" id="numpad">
+            <!-- Dynamic Numpad 1-20, Bull, Miss -->
+          </div>
+          <button id="miss-btn" style="width: 100%; margin-top: 10px; background: #3d3d5c;">Miss / Next Turn</button>
+        </div>
 
-    <div class="card">
-      <h2 style="margin-top:0">Enter Dart</h2>
+        <!-- Player Status / Hand -->
+        <div class="side-panel">
+          <h3>Completed Chain</h3>
+          <div id="completed-chain" class="domino-chain">
+            <!-- Completed dominoes shown here -->
+          </div>
 
-      <div class="numberGrid" id="numberGrid"></div>
-
-      <div class="multiplierRow" id="multiplierRow"></div>
-
-      <div class="actionRow">
-        <button class="secondary" onclick="recordMiss()">Miss</button>
-        <button class="secondary" onclick="undo()">Undo</button>
-        <button class="danger" onclick="endTurn()">End Turn</button>
+          <h3 style="margin-top: 20px;">Remaining Dominoes</h3>
+          <div id="remaining-chain" class="domino-chain">
+            <!-- Upcoming dominoes shown here -->
+          </div>
+        </div>
       </div>
     </div>
-
-    <div class="card">
-      <h2 style="margin-top:0">Statistics</h2>
-      <div id="statsArea"></div>
-    </div>
-
   </div>
-</div>
 
-<script>
-let state = null;
-let selectedNumber = null;
-let selectedMultiplier = 1;
+  <script>
+    // --- GAME STATE ---
+    let players = [];
+    let currentPlayerIdx = 0;
+    let dartsLeft = 3;
+    let rules = { chain: true, doubles: true, wild: true };
 
-function connectedChain(count){
-  const nums = [...Array(20).keys()].map(i=>i+1);
-  nums.push('Bull');
-  const chain = [];
-  let current = nums[Math.floor(Math.random()*nums.length)];
-  for(let i=0;i<count;i++){
-    const next = nums[Math.floor(Math.random()*nums.length)];
-    chain.push([current,next]);
-    current = next;
-  }
-  return chain;
-}
+    // --- DOM ELEMENTS ---
+    const setupScreen = document.getElementById('setup-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const playerNameInput = document.getElementById('player-name-input');
+    const addPlayerBtn = document.getElementById('add-player-btn');
+    const playerList = document.getElementById('player-list');
+    const startGameBtn = document.getElementById('start-game-btn');
 
-function startGame(){
-  const names = ['p1','p2','p3','p4']
-    .map(id=>document.getElementById(id).value.trim())
-    .filter(Boolean);
+    const activePlayerName = document.getElementById('active-player-name');
+    const dominoProgress = document.getElementById('domino-progress');
+    const targetSide1 = document.getElementById('target-side-1');
+    const targetSide2 = document.getElementById('target-side-2');
+    const completedChain = document.getElementById('completed-chain');
+    const remainingChain = document.getElementById('remaining-chain');
+    const numpad = document.getElementById('numpad');
+    const missBtn = document.getElementById('miss-btn');
+    const useWildBtn = document.getElementById('use-wild-btn');
 
-  if(names.length < 2){
-    alert('Enter at least two players.');
-    return;
-  }
-
-  const count = parseInt(document.getElementById('dominoCount').value);
-  const board = document.getElementById('boardType').value;
-
-  state = {
-    boardType: board,
-    turn:1,
-    currentPlayer:0,
-    dartsRemaining:3,
-    selectedNumber:null,
-    selectedMultiplier:1,
-    history:[],
-    players:names.map(name=>({
-      name,
-      chain:connectedChain(count),
-      currentIndex:0,
-      progress:[false,false],
-      stats:{
-        darts:0,singles:0,doubles:0,triples:0,quads:0,misses:0,completed:0
+    // --- SETUP FUNCTIONS ---
+    addPlayerBtn.addEventListener('click', () => {
+      const name = playerNameInput.value.trim();
+      if (name) {
+        players.push(name);
+        playerNameInput.value = '';
+        renderPlayerList();
       }
-    }))
-  };
-
-  saveGame();
-  showGame();
-}
-
-function showGame(){
-  document.getElementById('setupScreen').style.display='none';
-  document.getElementById('gameScreen').style.display='block';
-
-  buildNumberButtons();
-  buildMultiplierButtons();
-  render();
-}
-
-function buildNumberButtons(){
-  const grid = document.getElementById('numberGrid');
-  grid.innerHTML='';
-  for(let i=1;i<=20;i++){
-    const b=document.createElement('button');
-    b.className='numBtn';
-    b.textContent=i;
-    b.onclick=()=>selectNumber(i);
-    grid.appendChild(b);
-  }
-  const bull=document.createElement('button');
-  bull.className='numBtn';
-  bull.textContent='Bull';
-  bull.onclick=()=>selectNumber('Bull');
-  grid.appendChild(bull);
-}
-
-function buildMultiplierButtons(){
-  const row=document.getElementById('multiplierRow');
-  row.innerHTML='';
-
-  const multipliers=[
-    {label:'Single',value:1},
-    {label:'Double',value:2},
-    {label:'Triple',value:3},
-  ];
-
-  if(state.boardType==='quad'){
-    multipliers.push({label:'Quad',value:4});
-  }
-
-  multipliers.forEach(m=>{
-    const b=document.createElement('button');
-    b.className='multBtn'+(m.value===1?' active':'');
-    b.textContent=m.label;
-    b.onclick=()=>selectMultiplier(m.value,b);
-    row.appendChild(b);
-  });
-}
-
-function selectNumber(n){
-  selectedNumber=n;
-  attemptThrow();
-}
-
-function selectMultiplier(v,btn){
-  selectedMultiplier=v;
-  document.querySelectorAll('.multBtn').forEach(x=>x.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function attemptThrow(){
-  if(selectedNumber===null) return;
-  recordThrow(selectedNumber,selectedMultiplier);
-  selectedNumber=null;
-}
-
-function currentPlayerObj(){
-  return state.players[state.currentPlayer];
-}
-
-function currentDomino(){
-  const p=currentPlayerObj();
-  return p.chain[p.currentIndex];
-}
-
-function recordThrow(number,mult){
-  const p=currentPlayerObj();
-
-  state.history.push(JSON.stringify(state));
-
-  p.stats.darts++;
-  if(mult===1)p.stats.singles++;
-  if(mult===2)p.stats.doubles++;
-  if(mult===3)p.stats.triples++;
-  if(mult===4)p.stats.quads++;
-
-  const dom=currentDomino();
-  if(!dom){ return; }
-
-  if(number===dom[0] && !p.progress[0]){
-    p.progress[0]=true;
-  }else if(number===dom[1] && !p.progress[1]){
-    p.progress[1]=true;
-  }
-
-  state.dartsRemaining--;
-
-  if(p.progress[0] && p.progress[1]){
-    p.stats.completed++;
-    p.currentIndex++;
-    p.progress=[false,false];
-
-    if(p.currentIndex >= p.chain.length){
-      saveGame();
-      render();
-      declareWinner(p);
-      return;
-    }
-  }
-
-  if(state.dartsRemaining<=0){
-    nextPlayer();
-  }
-
-  saveGame();
-  render();
-}
-
-function recordMiss(){
-  const p=currentPlayerObj();
-  state.history.push(JSON.stringify(state));
-  p.stats.darts++;
-  p.stats.misses++;
-  state.dartsRemaining--;
-  if(state.dartsRemaining<=0) nextPlayer();
-  saveGame();
-  render();
-}
-
-function undo(){
-  if(!state.history.length) return;
-  state = JSON.parse(state.history.pop());
-  render();
-  saveGame();
-}
-
-function endTurn(){
-  nextPlayer();
-  saveGame();
-  render();
-}
-
-function nextPlayer(){
-  state.currentPlayer=(state.currentPlayer+1)%state.players.length;
-  state.dartsRemaining=3;
-  if(state.currentPlayer===0) state.turn++;
-}
-
-function declareWinner(player){
-  document.getElementById('winnerBanner').style.display='block';
-  document.getElementById('winnerText').textContent='🏆 '+player.name+' Wins!';
-  document.getElementById('winnerSub').textContent=
-    'Completed '+player.chain.length+' dominoes in '+player.stats.darts+' darts.';
-  localStorage.removeItem('dominoDartsSave');
-}
-
-function render(){
-  document.getElementById('currentPlayer').textContent=currentPlayerObj().name;
-  document.getElementById('turnNumber').textContent=state.turn;
-  document.getElementById('dartsRemaining').textContent=state.dartsRemaining;
-  document.getElementById('boardDisplay').textContent=
-    state.boardType==='quad' ? 'Quad Board' : 'Basic Board';
-
-  renderCurrentDomino();
-  renderPlayers();
-  renderStats();
-}
-
-function dominoHTML(a,b,cls=''){
-  return `<div class="domino ${cls}"><span>${a}</span><span>${b}</span></div>`;
-}
-
-function renderCurrentDomino(){
-  const area=document.getElementById('currentDomino');
-  const prog=document.getElementById('dominoProgress');
-  const p=currentPlayerObj();
-  const dom=currentDomino();
-
-  if(!dom){
-    area.innerHTML='<div class="domino completed"><span>✔</span><span>✔</span></div>';
-    prog.textContent='Chain complete!';
-    return;
-  }
-
-  area.innerHTML=dominoHTML(dom[0],dom[1],'current');
-  prog.textContent=
-    (p.progress[0]?'✔ ':'⬜ ')+dom[0]+'   |   '+
-    (p.progress[1]?'✔ ':'⬜ ')+dom[1];
-}
-
-function renderPlayers(){
-  const area=document.getElementById('playersArea');
-  area.innerHTML='';
-
-  state.players.forEach((p,i)=>{
-    const card=document.createElement('div');
-    card.className='playerCard'+(i===state.currentPlayer?' active':'');
-    let html=`<h3 style="margin-top:0">${p.name}</h3>`;
-    html+=`<div style="color:var(--muted);font-size:.9rem">${p.currentIndex}/${p.chain.length} completed</div>`;
-    html+=`<div class="dominoChain">`;
-
-    p.chain.forEach((d,idx)=>{
-      let cls='';
-      if(idx<p.currentIndex) cls='completed';
-      else if(idx===p.currentIndex) cls='current';
-      html+=dominoHTML(d[0],d[1],cls);
     });
 
-    html+='</div>';
-    card.innerHTML=html;
-    area.appendChild(card);
-  });
-}
+    function renderPlayerList() {
+      playerList.innerHTML = '';
+      players.forEach((p, index) => {
+        const li = document.createElement('li');
+        li.className = 'player-item';
+        li.innerHTML = `
+          <span>${p}</span>
+          <button class="remove-btn" onclick="removePlayer(${index})">X</button>
+        `;
+        playerList.appendChild(li);
+      });
+    }
 
-function renderStats(){
-  let html='<table style="width:100%;border-collapse:collapse">';
-  html+='<tr><th style="text-align:left;padding:6px">Player</th><th>Darts</th><th>Comp</th><th>Miss</th></tr>';
-  state.players.forEach(p=>{
-    html+=`<tr>
-      <td style="padding:6px">${p.name}</td>
-      <td style="text-align:center">${p.stats.darts}</td>
-      <td style="text-align:center">${p.stats.completed}</td>
-      <td style="text-align:center">${p.stats.misses}</td>
-    </tr>`;
-  });
-  html+='</table>';
-  document.getElementById('statsArea').innerHTML=html;
-}
+    function removePlayer(idx) {
+      players.splice(idx, 1);
+      renderPlayerList();
+    }
 
-function saveGame(){
-  localStorage.setItem('dominoDartsSave',JSON.stringify(state));
-}
+    // Generate random continuous domino chain for a player
+    function generateDominoHand() {
+      const hand = [];
+      let lastNum = Math.floor(Math.random() * 20) + 1;
 
-function loadGame(){
-  const raw=localStorage.getItem('dominoDartsSave');
-  if(!raw){
-    alert('No saved game found.');
-    return;
-  }
-  state=JSON.parse(raw);
-  showGame();
-}
+      for (let i = 0; i < 7; i++) {
+        let nextNum;
+        // Chance for double
+        if (Math.random() < 0.2) {
+          nextNum = lastNum;
+        } else {
+          const numbers = [...Array(20).keys()].map(x => (x + 1).toString());
+          numbers.push('Bull');
+          nextNum = numbers[Math.floor(Math.random() * numbers.length)];
+        }
+        hand.push({
+          val1: String(lastNum),
+          val2: String(nextNum),
+          hit1: false,
+          hit2: false
+        });
+        lastNum = nextNum;
+      }
+      return hand;
+    }
 
-function newGame(){
-  localStorage.removeItem('dominoDartsSave');
-  location.reload();
-}
-</script>
+    startGameBtn.addEventListener('click', () => {
+      if (players.length === 0) {
+        alert('Please add at least one player!');
+        return;
+      }
+
+      rules.chain = document.getElementById('rule-chain').checked;
+      rules.doubles = document.getElementById('rule-doubles').checked;
+      rules.wild = document.getElementById('rule-wild').checked;
+
+      // Transform player array into object structure
+      players = players.map(name => ({
+        name: name,
+        hand: generateDominoHand(),
+        currentIndex: 0,
+        hasWild: rules.wild
+      }));
+
+      setupScreen.classList.add('hidden');
+      gameScreen.style.display = 'flex';
+
+      buildNumpad();
+      startTurn();
+    });
+
+    // --- NUMPAD GENERATION ---
+    function buildNumpad() {
+      numpad.innerHTML = '';
+      for (let i = 1; i <= 20; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.onclick = () => handleHit(String(i));
+        numpad.appendChild(btn);
+      }
+      const bullBtn = document.createElement('button');
+      bullBtn.textContent = 'Bull';
+      bullBtn.style.gridColumn = 'span 2';
+      bullBtn.style.background = '#ff4757';
+      bullBtn.onclick = () => handleHit('Bull');
+      numpad.appendChild(bullBtn);
+    }
+
+    // --- GAMEPLAY LOGIC ---
+    function startTurn() {
+      dartsLeft = 3;
+      updateDartPips();
+      renderBoard();
+    }
+
+    function updateDartPips() {
+      for (let i = 1; i <= 3; i++) {
+        const pip = document.getElementById(`dart-${i}`);
+        if (i <= dartsLeft) {
+          pip.classList.add('active');
+        } else {
+          pip.classList.remove('active');
+        }
+      }
+    }
+
+    function renderBoard() {
+      const p = players[currentPlayerIdx];
+      activePlayerName.textContent = p.name;
+      dominoProgress.textContent = p.currentIndex + 1;
+
+      const currentDomino = p.hand[p.currentIndex];
+
+      // Render Active Target Domino
+      targetSide1.textContent = currentDomino.val1;
+      targetSide2.textContent = currentDomino.val2;
+
+      if (currentDomino.hit1) targetSide1.classList.add('hit');
+      else targetSide1.classList.remove('hit');
+
+      if (currentDomino.hit2) targetSide2.classList.add('hit');
+      else targetSide2.classList.remove('hit');
+
+      // Wildcard button state
+      if (p.hasWild) {
+        useWildBtn.classList.remove('hidden');
+      } else {
+        useWildBtn.classList.add('hidden');
+      }
+
+      // Render Completed Chain
+      completedChain.innerHTML = '';
+      for (let i = 0; i < p.currentIndex; i++) {
+        const d = p.hand[i];
+        completedChain.appendChild(createMiniDomino(d.val1, d.val2));
+      }
+
+      // Render Remaining Chain
+      remainingChain.innerHTML = '';
+      for (let i = p.currentIndex + 1; i < p.hand.length; i++) {
+        const d = p.hand[i];
+        remainingChain.appendChild(createMiniDomino(d.val1, d.val2));
+      }
+    }
+
+    function createMiniDomino(v1, v2) {
+      const el = document.createElement('div');
+      el.className = 'domino-mini';
+      el.innerHTML = `<span>${v1}</span><span>${v2}</span>`;
+      return el;
+    }
+
+    function handleHit(value) {
+      if (dartsLeft <= 0) return;
+
+      const p = players[currentPlayerIdx];
+      const target = p.hand[p.currentIndex];
+      let hitScored = false;
+
+      // Handle Double Bonus rule
+      if (rules.doubles && target.val1 === target.val2 && value === target.val1) {
+        target.hit1 = true;
+        target.hit2 = true;
+        hitScored = true;
+      } else {
+        // Normal hit detection
+        if (value === target.val1 && !target.hit1) {
+          target.hit1 = true;
+          hitScored = true;
+        } else if (value === target.val2 && !target.hit2) {
+          target.hit2 = true;
+          hitScored = true;
+        }
+      }
+
+      dartsLeft--;
+      updateDartPips();
+
+      // Check if current domino completed
+      if (target.hit1 && target.hit2) {
+        p.currentIndex++;
+
+        // WIN CONDITION
+        if (p.currentIndex >= 7) {
+          renderBoard();
+          setTimeout(() => alert(`🎉 ${p.name} wins the game!`), 10);
+          return;
+        }
+
+        // Check Chain Reaction Rule
+        if (!rules.chain) {
+          endTurn();
+          return;
+        }
+      }
+
+      if (dartsLeft === 0) {
+        endTurn();
+      } else {
+        renderBoard();
+      }
+    }
+
+    useWildBtn.addEventListener('click', () => {
+      const p = players[currentPlayerIdx];
+      if (!p.hasWild) return;
+
+      p.hasWild = false;
+      const target = p.hand[p.currentIndex];
+      target.hit1 = true;
+      target.hit2 = true;
+      p.currentIndex++;
+
+      if (p.currentIndex >= 7) {
+        renderBoard();
+        setTimeout(() => alert(`🎉 ${p.name} wins the game!`), 10);
+        return;
+      }
+
+      renderBoard();
+    });
+
+    missBtn.addEventListener('click', () => {
+      endTurn();
+    });
+
+    function endTurn() {
+      // Reset uncompleted progress for current domino
+      const p = players[currentPlayerIdx];
+      if (p.currentIndex < 7) {
+        p.hand[p.currentIndex].hit1 = false;
+        p.hand[p.currentIndex].hit2 = false;
+      }
+
+      // Next Player
+      currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+      startTurn();
+    }
+  </script>
 </body>
 </html>
