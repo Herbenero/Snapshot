@@ -93,6 +93,12 @@
       background-color: var(--accent-hover);
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background-color: #3d3d5c !important;
+    }
+
     .player-list {
       list-style: none;
       margin-bottom: 20px;
@@ -238,6 +244,16 @@
       background: #3d3d5c;
     }
 
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .action-buttons button {
+      flex: 1;
+    }
+
     /* Player Chain */
     .domino-chain {
       display: flex;
@@ -354,7 +370,11 @@
           <div class="numpad" id="numpad">
             <!-- Dynamic Numpad 1-20, Bull, Miss -->
           </div>
-          <button id="miss-btn" style="width: 100%; margin-top: 10px; background: #3d3d5c;">Miss / Next Turn</button>
+          
+          <div class="action-buttons">
+            <button id="undo-btn" style="background: #eccc68; color: #000;" disabled>↩ Undo</button>
+            <button id="miss-btn" style="background: #3d3d5c;">Miss / End Turn</button>
+          </div>
         </div>
 
         <!-- Player Status / Hand -->
@@ -379,6 +399,7 @@
     let currentPlayerIdx = 0;
     let dartsLeft = 3;
     let rules = { chain: true, doubles: true, wild: true };
+    let historyStack = [];
 
     // --- DOM ELEMENTS ---
     const setupScreen = document.getElementById('setup-screen');
@@ -396,6 +417,7 @@
     const remainingChain = document.getElementById('remaining-chain');
     const numpad = document.getElementById('numpad');
     const missBtn = document.getElementById('miss-btn');
+    const undoBtn = document.getElementById('undo-btn');
     const useWildBtn = document.getElementById('use-wild-btn');
 
     // --- SETUP FUNCTIONS ---
@@ -426,14 +448,12 @@
       renderPlayerList();
     }
 
-    // Generate random continuous domino chain for a player
     function generateDominoHand() {
       const hand = [];
       let lastNum = Math.floor(Math.random() * 20) + 1;
 
       for (let i = 0; i < 7; i++) {
         let nextNum;
-        // Chance for double
         if (Math.random() < 0.2) {
           nextNum = lastNum;
         } else {
@@ -462,7 +482,6 @@
       rules.doubles = document.getElementById('rule-doubles').checked;
       rules.wild = document.getElementById('rule-wild').checked;
 
-      // Transform player array into object structure
       players = players.map(name => ({
         name: name,
         hand: generateDominoHand(),
@@ -494,9 +513,38 @@
       numpad.appendChild(bullBtn);
     }
 
+    // --- HISTORY / UNDO SYSTEM ---
+    function saveState() {
+      const snapshot = {
+        players: JSON.parse(JSON.stringify(players)),
+        currentPlayerIdx: currentPlayerIdx,
+        dartsLeft: dartsLeft
+      };
+      historyStack.push(snapshot);
+      undoBtn.disabled = false;
+    }
+
+    undoBtn.addEventListener('click', () => {
+      if (historyStack.length === 0) return;
+
+      const previousState = historyStack.pop();
+      players = previousState.players;
+      currentPlayerIdx = previousState.currentPlayerIdx;
+      dartsLeft = previousState.dartsLeft;
+
+      if (historyStack.length === 0) {
+        undoBtn.disabled = true;
+      }
+
+      updateDartPips();
+      renderBoard();
+    });
+
     // --- GAMEPLAY LOGIC ---
     function startTurn() {
       dartsLeft = 3;
+      historyStack = [];
+      undoBtn.disabled = true;
       updateDartPips();
       renderBoard();
     }
@@ -515,9 +563,9 @@
     function renderBoard() {
       const p = players[currentPlayerIdx];
       activePlayerName.textContent = p.name;
-      dominoProgress.textContent = p.currentIndex + 1;
+      dominoProgress.textContent = Math.min(p.currentIndex + 1, 7);
 
-      const currentDomino = p.hand[p.currentIndex];
+      const currentDomino = p.hand[p.currentIndex] || p.hand[p.hand.length - 1];
 
       // Render Active Target Domino
       targetSide1.textContent = currentDomino.val1;
@@ -530,7 +578,7 @@
       else targetSide2.classList.remove('hit');
 
       // Wildcard button state
-      if (p.hasWild) {
+      if (p.hasWild && p.currentIndex < 7) {
         useWildBtn.classList.remove('hidden');
       } else {
         useWildBtn.classList.add('hidden');
@@ -561,23 +609,21 @@
     function handleHit(value) {
       if (dartsLeft <= 0) return;
 
+      saveState();
+
       const p = players[currentPlayerIdx];
       const target = p.hand[p.currentIndex];
-      let hitScored = false;
 
       // Handle Double Bonus rule
       if (rules.doubles && target.val1 === target.val2 && value === target.val1) {
         target.hit1 = true;
         target.hit2 = true;
-        hitScored = true;
       } else {
         // Normal hit detection
         if (value === target.val1 && !target.hit1) {
           target.hit1 = true;
-          hitScored = true;
         } else if (value === target.val2 && !target.hit2) {
           target.hit2 = true;
-          hitScored = true;
         }
       }
 
@@ -610,6 +656,8 @@
     }
 
     useWildBtn.addEventListener('click', () => {
+      saveState();
+
       const p = players[currentPlayerIdx];
       if (!p.hasWild) return;
 
