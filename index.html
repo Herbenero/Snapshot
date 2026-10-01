@@ -602,7 +602,7 @@
         <div class="rule-block">
           <h3>Flash Point</h3>
           <p>
-            5 rounds, 3 darts each round. A random target from 1–20 is generated each round. Simply select Single, Double, Triple, Quad, or Miss for each throw to score on the target number. Highest total after 5 rounds wins.
+            5 rounds, 3 darts each round. A unique random target from 1–20 is assigned to each round (no repeated targets). Select Single, Double, Triple, Quad, or Miss to score on the target. Highest total wins.
           </p>
         </div>
         <div class="rule-block">
@@ -815,10 +815,6 @@
       return GAME_SEQUENCE[state.currentGameIndex];
     }
 
-    function randomTarget() {
-      return Math.floor(Math.random() * 20) + 1;
-    }
-
     function createPlayers(names) {
       return names.map((name, index) => ({
         id: index + 1,
@@ -843,7 +839,15 @@
     }
 
     function setupFlashTargets() {
-      state.flashTargets = Array.from({ length: 5 }, () => randomTarget());
+      // Create pool of numbers 1-20 and shuffle (Fisher-Yates) to guarantee no repeats
+      const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
+      for (let i = numbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+      }
+
+      state.flashTargets = numbers.slice(0, 5);
+
       state.players.forEach(player => {
         player.games.flashPoint.rounds.forEach((round, idx) => {
           round.target = state.flashTargets[idx];
