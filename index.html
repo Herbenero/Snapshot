@@ -1,1388 +1,1338 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Snapshot — Dart Game Suite</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0e0e12;
-      --bg-soft: #17171d;
-      --panel: #111117cc;
-      --panel-2: #1b1b23d9;
-      --line: rgba(255, 255, 255, .1);
-      --line-strong: rgba(255, 255, 255, .18);
-      --text: #f5f1e8;
-      --muted: #b9b1a2;
-      --accent: #ff6a00;
-      --accent-2: #ffc857;
-      --good: #7ddf9b;
-      --warn: #ffb703;
-      --bad: #ff6b6b;
-      --shadow: 0 20px 60px rgba(0, 0, 0, .35);
-      --radius: 22px;
-      --radius-sm: 14px;
-      --max: 1400px;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body {
-      font-family: "Inter", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 10% 10%, rgba(255, 106, 0, .14), transparent 28%),
-        radial-gradient(circle at 85% 20%, rgba(255, 200, 87, .09), transparent 24%),
-        radial-gradient(circle at 50% 80%, rgba(255, 255, 255, .04), transparent 26%),
-        linear-gradient(180deg, #111116 0%, #0b0b0f 100%);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
-      background-size: 24px 24px;
-      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .6), transparent 95%);
-      opacity: .32;
-    }
-
-    .app {
-      width: min(100%, var(--max));
-      margin-inline: auto;
-      padding: 20px;
-    }
-
-    .hero {
-      position: relative;
-      padding: 28px;
-      border: 1px solid var(--line);
-      border-radius: 32px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .015)),
-        linear-gradient(180deg, rgba(255, 106, 0, .08), rgba(255, 200, 87, .03));
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .hero::after {
-      content: "SNAPSHOT";
-      position: absolute;
-      right: -10px;
-      top: -14px;
-      font-family: "Bebas Neue", sans-serif;
-      font-size: clamp(4rem, 16vw, 11rem);
-      line-height: .85;
-      letter-spacing: .06em;
-      color: rgba(255, 255, 255, .03);
-      pointer-events: none;
-    }
-
-    .brand {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 20px;
-      align-items: flex-end;
-      position: relative;
-      z-index: 1;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: .8rem;
-      text-transform: uppercase;
-      letter-spacing: .22em;
-      color: var(--accent-2);
-      margin-bottom: 8px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 0 6px rgba(255, 106, 0, .12);
-    }
-
-    h1, h2, h3 {
-      font-family: "Bebas Neue", sans-serif;
-      margin: 0;
-      font-weight: 400;
-      line-height: .92;
-      letter-spacing: .03em;
-    }
-
-    h1 { font-size: clamp(3.2rem, 10vw, 7rem); }
-    h2 { font-size: clamp(2rem, 5vw, 3.2rem); }
-    h3 { font-size: clamp(1.35rem, 3vw, 2rem); }
-
-    .subtitle {
-      max-width: 720px;
-      color: var(--muted);
-      font-size: clamp(1rem, 1.8vw, 1.08rem);
-      line-height: 1.6;
-      margin-top: 10px;
-    }
-
-    .top-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .05);
-      border: 1px solid var(--line);
-      color: var(--text);
-      font-size: .92rem;
-      backdrop-filter: blur(10px);
-    }
-
-    .layout {
-      margin-top: 18px;
-      display: grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 18px;
-    }
-
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-    }
-
-    .setup { padding: 22px; }
-
-    .panel-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .kicker {
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      font-size: .75rem;
-    }
-
-    .grid { display: grid; gap: 14px; }
-    .setup-grid { grid-template-columns: 1fr; }
-
-    label {
-      display: block;
-      font-size: .85rem;
-      text-transform: uppercase;
-      letter-spacing: .14em;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    textarea, input, select {
-      width: 100%;
-      border: none;
-      outline: none;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .05);
-      color: var(--text);
-      padding: 14px 16px;
-      font: inherit;
-      border: 1px solid rgba(255, 255, 255, .08);
-      transition: .2s ease;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.45;
-    }
-
-    textarea:focus, input:focus, select:focus {
-      border-color: rgba(255, 200, 87, .45);
-      box-shadow: 0 0 0 4px rgba(255, 200, 87, .08);
-      transform: translateY(-1px);
-    }
-
-    .setup-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    button {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .btn {
-      padding: 13px 18px;
-      border-radius: 16px;
-      color: var(--text);
-      background: rgba(255, 255, 255, .05);
-      border: 1px solid var(--line);
-      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      border-color: var(--line-strong);
-      background: rgba(255, 255, 255, .08);
-    }
-
-    .btn:active {
-      transform: translateY(0) scale(.98);
-    }
-
-    .btn.primary {
-      background: linear-gradient(135deg, var(--accent), #ff8a00);
-      color: #190f07;
-      border-color: transparent;
-      font-weight: 800;
-    }
-
-    .btn.primary:hover {
-      box-shadow: 0 16px 40px rgba(255, 106, 0, .28);
-    }
-
-    .btn.secondary {
-      background: linear-gradient(135deg, rgba(255, 200, 87, .16), rgba(255, 255, 255, .05));
-      border-color: rgba(255, 200, 87, .18);
-    }
-
-    .btn.danger {
-      background: linear-gradient(135deg, rgba(255, 107, 107, .14), rgba(255, 255, 255, .03));
-      border-color: rgba(255, 107, 107, .2);
-    }
-
-    .rules {
-      padding: 22px;
-      display: grid;
-      gap: 14px;
-      align-content: start;
-    }
-
-    .rule-block {
-      padding: 16px 16px 14px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .03);
-      border: 1px solid var(--line);
-    }
-
-    .rule-block p {
-      margin: 8px 0 0;
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: .95rem;
-    }
-
-    .hidden { display: none !important; }
-
-    .game-shell {
-      margin-top: 18px;
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    .control-panel { padding: 22px; }
-
-    .score-panel {
-      padding: 22px;
-      position: sticky;
-      top: 16px;
-    }
-
-    .status-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .stat {
-      padding: 14px 12px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .035);
-      border: 1px solid var(--line);
-      min-height: 88px;
-    }
-
-    .stat .label {
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .13em;
-      font-size: .7rem;
-      margin-bottom: 8px;
-    }
-
-    .stat .value {
-      font-weight: 800;
-      font-size: clamp(1rem, 2vw, 1.35rem);
-      line-height: 1.1;
-    }
-
-    .target-banner {
-      padding: 18px;
-      border-radius: 22px;
-      margin-bottom: 18px;
-      background: linear-gradient(135deg, rgba(255, 106, 0, .16), rgba(255, 200, 87, .08)), rgba(255, 255, 255, .03);
-      border: 1px solid rgba(255, 200, 87, .18);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      justify-content: space-between;
-      align-items: end;
-    }
-
-    .target-number {
-      font-family: "Bebas Neue", sans-serif;
-      font-size: clamp(4rem, 8vw, 6rem);
-      line-height: .9;
-      color: var(--accent-2);
-      text-shadow: 0 8px 30px rgba(255, 200, 87, .18);
-    }
-
-    .helper {
-      color: var(--muted);
-      line-height: 1.5;
-      font-size: .95rem;
-    }
-
-    .section-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 18px 0 10px;
-    }
-
-    .button-grid { display: grid; gap: 10px; }
-    .num-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .mod-grid { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
-
-    .score-btn {
-      min-height: 56px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .04);
-      color: var(--text);
-      border: 1px solid var(--line);
-      font-weight: 700;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .score-btn::before {
-      content: "";
-      position: absolute;
-      inset: auto 0 0 0;
-      height: 0%;
-      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .1));
-      transition: height .18s ease;
-    }
-
-    .score-btn:hover::before { height: 100%; }
-    .score-btn:hover {
-      transform: translateY(-2px);
-      border-color: var(--line-strong);
-    }
-
-    .score-btn.active {
-      background: linear-gradient(135deg, rgba(255, 200, 87, .2), rgba(255, 106, 0, .16));
-      border-color: rgba(255, 200, 87, .35);
-      color: #fff7df;
-      box-shadow: 0 10px 30px rgba(255, 200, 87, .08);
-    }
-
-    .throw-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-      min-height: 52px;
-    }
-
-    .throw-chip {
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .06);
-      border: 1px solid var(--line);
-      font-size: .92rem;
-      font-weight: 700;
-    }
-
-    .throw-chip small {
-      color: var(--muted);
-      font-weight: 600;
-      margin-left: 6px;
-    }
-
-    .throw-chip.bad {
-      border-color: rgba(255, 107, 107, .3);
-      color: #ffd8d8;
-    }
-
-    .throw-chip.good { border-color: rgba(125, 223, 155, .25); }
-
-    .live-score {
-      margin-top: 14px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .03);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 18px;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .live-score strong { font-size: 1.3rem; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 18px;
-    }
-
-    th, td {
-      padding: 12px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
-      font-size: .95rem;
-      vertical-align: middle;
-    }
-
-    th {
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      font-size: .72rem;
-      font-weight: 700;
-    }
-
-    tbody tr:hover td { background: rgba(255, 255, 255, .03); }
-
-    .rank { font-weight: 800; color: var(--accent-2); }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .04);
-      font-size: .82rem;
-    }
-
-    .footer-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
-    .notice {
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .03);
-      color: var(--muted);
-      line-height: 1.5;
-      margin-top: 14px;
-    }
-
-    .winner { color: var(--good); font-weight: 800; }
-    .bust { color: var(--bad); font-weight: 800; }
-
-    @media (max-width: 1080px) {
-      .layout, .game-shell { grid-template-columns: 1fr; }
-      .score-panel { position: relative; top: auto; }
-    }
-
-    @media (max-width: 760px) {
-      .app { padding: 14px; }
-      .hero, .setup, .rules, .control-panel, .score-panel { padding: 18px; }
-      .status-strip { grid-template-columns: repeat(2, 1fr); }
-      .num-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .top-meta { width: 100%; }
-      .brand { align-items: flex-start; }
-    }
-
-    @media (max-width: 520px) {
-      .num-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .mod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      th, td { padding: 10px 8px; font-size: .88rem; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snapshot — Dart Game Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e0e12;
+            --bg-soft: #17171d;
+            --panel: #111117cc;
+            --panel-2: #1b1b23d9;
+            --line: rgba(255, 255, 255, .1);
+            --line-strong: rgba(255, 255, 255, .18);
+            --text: #f5f1e8;
+            --muted: #b9b1a2;
+            --accent: #ff6a00;
+            --accent-2: #ffc857;
+            --good: #7ddf9b;
+            --warn: #ffb703;
+            --bad: #ff6b6b;
+            --shadow: 0 20px 60px rgba(0, 0, 0, .35);
+            --radius: 22px;
+            --radius-sm: 14px;
+            --max: 1400px;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            font-family: "Inter", sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at 10% 10%, rgba(255, 106, 0, .14), transparent 28%),
+                        radial-gradient(circle at 85% 20%, rgba(255, 200, 87, .09), transparent 24%),
+                        radial-gradient(circle at 50% 80%, rgba(255, 255, 255, .04), transparent 26%),
+                        linear-gradient(180deg, #111116 0%, #0b0b0f 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
+            background-size: 24px 24px;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .6), transparent 95%);
+            opacity: .32;
+        }
+
+        .app {
+            width: min(100%, var(--max));
+            margin-inline: auto;
+            padding: 20px;
+        }
+
+        .hero {
+            position: relative;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: 32px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .015)),
+                        linear-gradient(180deg, rgba(255, 106, 0, .08), rgba(255, 200, 87, .03));
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: "SNAPSHOT";
+            position: absolute;
+            right: -10px;
+            top: -14px;
+            font-family: "Bebas Neue", sans-serif;
+            font-size: clamp(4rem, 16vw, 11rem);
+            line-height: .85;
+            letter-spacing: .06em;
+            color: rgba(255, 255, 255, .03);
+            pointer-events: none;
+        }
+
+        .brand {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-end;
+            position: relative;
+            z-index: 1;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .22em;
+            color: var(--accent-2);
+            margin-bottom: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--accent);
+            box-shadow: 0 0 0 6px rgba(255, 106, 0, .12);
+        }
+
+        h1, h2, h3 {
+            font-family: "Bebas Neue", sans-serif;
+            margin: 0;
+            font-weight: 400;
+            line-height: .92;
+            letter-spacing: .03em;
+        }
+
+        h1 { font-size: clamp(3.2rem, 10vw, 7rem); }
+        h2 { font-size: clamp(2rem, 5vw, 3.2rem); }
+        h3 { font-size: clamp(1.35rem, 3vw, 2rem); }
+
+        .subtitle {
+            max-width: 720px;
+            color: var(--muted);
+            font-size: clamp(1rem, 1.8vw, 1.08rem);
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .top-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid var(--line);
+            color: var(--text);
+            font-size: .92rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .layout {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 18px;
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .setup { padding: 22px; }
+        .panel-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .kicker {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .16em;
+            font-size: .75rem;
+        }
+
+        .grid { display: grid; gap: 14px; }
+        .setup-grid { grid-template-columns: 1fr; }
+
+        label {
+            display: block;
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        textarea, input, select {
+            width: 100%;
+            border: none;
+            outline: none;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .05);
+            color: var(--text);
+            padding: 14px 16px;
+            font: inherit;
+            border: 1px solid rgba(255, 255, 255, .08);
+            transition: .2s ease;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.45;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            border-color: rgba(255, 200, 87, .45);
+            box-shadow: 0 0 0 4px rgba(255, 200, 87, .08);
+            transform: translateY(-1px);
+        }
+
+        .setup-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            appearance: none;
+            border: none;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .btn {
+            padding: 13px 18px;
+            border-radius: 16px;
+            color: var(--text);
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid var(--line);
+            transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--line-strong);
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .btn:active { transform: translateY(0) scale(.98); }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), #ff8a00);
+            color: #190f07;
+            border-color: transparent;
+            font-weight: 800;
+        }
+
+        .btn.primary:hover { box-shadow: 0 16px 40px rgba(255, 106, 0, .28); }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, rgba(255, 200, 87, .16), rgba(255, 255, 255, .05));
+            border-color: rgba(255, 200, 87, .18);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, rgba(255, 107, 107, .14), rgba(255, 255, 255, .03));
+            border-color: rgba(255, 107, 107, .2);
+        }
+
+        .rules {
+            padding: 22px;
+            display: grid;
+            gap: 14px;
+            align-content: start;
+        }
+
+        .rule-block {
+            padding: 16px 16px 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, .03);
+            border: 1px solid var(--line);
+        }
+
+        .rule-block p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.55;
+            font-size: .95rem;
+        }
+
+        .hidden { display: none !important; }
+
+        .game-shell {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 18px;
+            align-items: start;
+        }
+
+        .control-panel { padding: 22px; }
+        .score-panel {
+            padding: 22px;
+            position: sticky;
+            top: 16px;
+        }
+
+        .status-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .stat {
+            padding: 14px 12px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, .035);
+            border: 1px solid var(--line);
+            min-height: 88px;
+        }
+
+        .stat .label {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .13em;
+            font-size: .7rem;
+            margin-bottom: 8px;
+        }
+
+        .stat .value {
+            font-weight: 800;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 1.1;
+        }
+
+        .target-banner {
+            padding: 18px;
+            border-radius: 22px;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, rgba(255, 106, 0, .16), rgba(255, 200, 87, .08)), rgba(255, 255, 255, .03);
+            border: 1px solid rgba(255, 200, 87, .18);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: space-between;
+            align-items: end;
+        }
+
+        .target-number {
+            font-family: "Bebas Neue", sans-serif;
+            font-size: clamp(4rem, 8vw, 6rem);
+            line-height: .9;
+            color: var(--accent-2);
+            text-shadow: 0 8px 30px rgba(255, 200, 87, .18);
+        }
+
+        .helper {
+            color: var(--muted);
+            line-height: 1.5;
+            font-size: .95rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 18px 0 10px;
+        }
+
+        .button-grid { display: grid; gap: 10px; }
+        .num-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .mod-grid { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+
+        .score-btn {
+            min-height: 56px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .04);
+            color: var(--text);
+            border: 1px solid var(--line);
+            font-weight: 700;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-btn::before {
+            content: "";
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 0%;
+            background: linear-gradient(180deg, transparent, rgba(255, 255, 255, .1));
+            transition: height .18s ease;
+        }
+
+        .score-btn:hover::before { height: 100%; }
+        .score-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--line-strong);
+        }
+
+        .score-btn.active {
+            background: linear-gradient(135deg, rgba(255, 200, 87, .2), rgba(255, 106, 0, .16));
+            border-color: rgba(255, 200, 87, .35);
+            color: #fff7df;
+            box-shadow: 0 10px 30px rgba(255, 200, 87, .08);
+        }
+
+        .throw-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            min-height: 52px;
+        }
+
+        .throw-chip {
+            padding: 10px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid var(--line);
+            font-size: .92rem;
+            font-weight: 700;
+        }
+
+        .throw-chip small {
+            color: var(--muted);
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .throw-chip.bad {
+            border-color: rgba(255, 107, 107, .3);
+            color: #ffd8d8;
+        }
+
+        .throw-chip.good { border-color: rgba(125, 223, 155, .25); }
+
+        .live-score {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, .03);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .live-score strong { font-size: 1.3rem; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 18px;
+        }
+
+        th, td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--line);
+            font-size: .95rem;
+            vertical-align: middle;
+        }
+
+        th {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        tbody tr:hover td { background: rgba(255, 255, 255, .03); }
+        .rank { font-weight: 800; color: var(--accent-2); }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, .04);
+            font-size: .82rem;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .notice {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, .03);
+            color: var(--muted);
+            line-height: 1.5;
+            margin-top: 14px;
+        }
+
+        .winner { color: var(--good); font-weight: 800; }
+        .bust { color: var(--bad); font-weight: 800; }
+
+        @media (max-width: 1080px) {
+            .layout, .game-shell { grid-template-columns: 1fr; }
+            .score-panel { position: relative; top: auto; }
+        }
+
+        @media (max-width: 760px) {
+            .app { padding: 14px; }
+            .hero, .setup, .rules, .control-panel, .score-panel { padding: 18px; }
+            .status-strip { grid-template-columns: repeat(2, 1fr); }
+            .num-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .top-meta { width: 100%; }
+            .brand { align-items: flex-start; }
+        }
+
+        @media (max-width: 520px) {
+            .num-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .mod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            th, td { padding: 10px 8px; font-size: .88rem; }
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <header class="hero">
-      <div class="brand">
-        <div>
-          <div class="eyebrow"><span class="dot"></span> Snapshot Dart Game Suite</div>
-          <h1>Snapshot</h1>
-          <p class="subtitle">
-            A tournament-style scoring webapp for three dart games in sequence: <strong>Flash Point</strong>, <strong>9 Dart Century</strong>, and <strong>Quickdraw</strong>. Built for live play with multiple players, board-type control, per-dart entry, undo, score submission, and final standings.
-          </p>
-        </div>
-        <div class="top-meta">
-          <div class="pill">3 Games</div>
-          <div class="pill">Multi-Player</div>
-          <div class="pill">Basic / Quad Board</div>
-        </div>
-      </div>
-    </header>
-
-    <section class="layout">
-      <section class="panel setup" id="setupPanel">
-        <div class="panel-head">
-          <div>
-            <div class="kicker">Match Setup</div>
-            <h2>Start a Snapshot Session</h2>
-          </div>
-          <div class="tag" id="boardTag">Board: Not Selected</div>
-        </div>
-        <div class="grid setup-grid">
-          <div>
-            <label for="playerNames">Player Names</label>
-            <textarea id="playerNames" placeholder="Enter one player per line&#10;Example:&#10;Alex&#10;Jordan&#10;Sam"></textarea>
-          </div>
-          <div>
-            <label for="boardType">Board Selection</label>
-            <select id="boardType">
-              <option value="basic">Basic Board</option>
-              <option value="quad">Quad Board</option>
-            </select>
-          </div>
-        </div>
-        <div class="setup-actions">
-          <button class="btn primary" id="startBtn">Start Snapshot</button>
-          <button class="btn secondary" id="demoBtn">Load Demo Players</button>
-          <button class="btn" id="clearSetupBtn">Clear</button>
-        </div>
-        <div class="notice">
-          Player order stays the same through all three games. The selected board type also carries through the entire Snapshot session.
-        </div>
-      </section>
-
-      <aside class="panel rules">
-        <div class="panel-head">
-          <div>
-            <div class="kicker">Game Flow</div>
-            <h2>How Snapshot Works</h2>
-          </div>
-        </div>
-        <div class="rule-block">
-          <h3>Flash Point</h3>
-          <p>
-            5 rounds, 3 darts each round. A unique random target from 1–20 is assigned to each round (no repeated targets). Select Single, Double, Triple, Quad, or Miss to score on the target. Highest total wins.
-          </p>
-        </div>
-        <div class="rule-block">
-          <h3>9 Dart Century</h3>
-          <p>
-            9 darts total across 3 turns. Get exactly 100 or as close as possible without going over. Going over 100 is a bust and the player is out. A dart outside the scoring area resets the player's score to zero. Bounce-outs count as miss with no points.
-          </p>
-        </div>
-        <div class="rule-block">
-          <h3>Quickdraw</h3>
-          <p>
-            3 rounds, 3 darts each round. Standard scoring with fast turn submission. Final standings show each player horizontally with scores for all three games in columns.
-          </p>
-        </div>
-      </aside>
-    </section>
-
-    <main id="gameApp" class="hidden">
-      <section class="game-shell">
-        <section class="panel control-panel">
-          <div class="panel-head">
-            <div>
-              <div class="kicker">Live Match</div>
-              <h2 id="gameTitle">Flash Point</h2>
+    <div class="app">
+        <header class="hero">
+            <div class="brand">
+                <div>
+                    <div class="eyebrow"><span class="dot"></span> Snapshot Dart Game Suite</div>
+                    <h1>Snapshot</h1>
+                    <p class="subtitle">
+                        A tournament-style scoring webapp for three dart games in sequence: <strong>Flash Point</strong>, <strong>9 Dart Century</strong>, and <strong>Quickdraw</strong>. Built for live play with multiple players, board-type control, per-dart entry, undo, score submission, and final standings.
+                    </p>
+                </div>
+                <div class="top-meta">
+                    <div class="pill">3 Games</div>
+                    <div class="pill">Multi-Player</div>
+                    <div class="pill">Basic / Quad Board</div>
+                </div>
             </div>
-            <div class="tag" id="boardModeDisplay">Board: Basic</div>
-          </div>
+        </header>
 
-          <div class="status-strip">
-            <div class="stat">
-              <div class="label">Current Player</div>
-              <div class="value" id="currentPlayerDisplay">—</div>
-            </div>
-            <div class="stat">
-              <div class="label">Turn</div>
-              <div class="value" id="turnDisplay">—</div>
-            </div>
-            <div class="stat">
-              <div class="label">Darts This Turn</div>
-              <div class="value" id="dartsDisplay">0 / 3</div>
-            </div>
-            <div class="stat">
-              <div class="label">Modifier</div>
-              <div class="value" id="modifierDisplay">Single</div>
-            </div>
-          </div>
+        <section class="layout">
+            <section class="panel setup" id="setupPanel">
+                <div class="panel-head">
+                    <div>
+                        <div class="kicker">Match Setup</div>
+                        <h2>Start a Snapshot Session</h2>
+                    </div>
+                    <div class="tag" id="boardTag">Board: Not Selected</div>
+                </div>
 
-          <div id="flashTargetBanner" class="target-banner hidden">
-            <div>
-              <div class="kicker">Flash Point Target</div>
-              <div class="target-number" id="flashTargetNumber">—</div>
-            </div>
-            <div class="helper" id="flashTargetHelper">
-              Click Single, Double, Triple, Quad, or Miss to log each dart directly on the target number.
-            </div>
-          </div>
+                <div class="grid setup-grid">
+                    <div>
+                        <label for="playerNames">Player Names</label>
+                        <textarea id="playerNames" placeholder="Enter one player per line&#10;Example:&#10;Alex&#10;Jordan&#10;Sam"></textarea>
+                    </div>
+                    <div>
+                        <label for="boardType">Board Selection</label>
+                        <select id="boardType">
+                            <option value="basic">Basic Board</option>
+                            <option value="quad">Quad Board</option>
+                        </select>
+                    </div>
+                </div>
 
-          <div id="numberSection">
-            <div class="section-title">
-              <h3>Choose Number</h3>
-              <div class="tag" id="selectedBaseDisplay">Base: None</div>
-            </div>
-            <div class="button-grid num-grid" id="numberButtons"></div>
-          </div>
+                <div class="setup-actions">
+                    <button class="btn primary" id="startBtn">Start Snapshot</button>
+                    <button class="btn secondary" id="demoBtn">Load Demo Players</button>
+                    <button class="btn" id="clearSetupBtn">Clear</button>
+                </div>
 
-          <div class="section-title">
-            <h3>Choose Bed / Action</h3>
-            <div class="tag" id="selectedThrowPreview">Next: Single —</div>
-          </div>
-          <div class="button-grid mod-grid" id="modifierButtons"></div>
+                <div class="notice">
+                    Player order stays the same through all three games. The selected board type also carries through the entire Snapshot session.
+                </div>
+            </section>
 
-          <div class="section-title">
-            <h3>Turn Darts</h3>
-            <div class="tag" id="turnScoreTag">Turn Score: 0</div>
-          </div>
-          <div class="throw-list" id="throwList"></div>
-
-          <div class="live-score">
-            <div>
-              <div class="kicker">Current Turn Status</div>
-              <strong id="turnStatus">Awaiting input</strong>
-            </div>
-            <div>
-              <div class="kicker">Player Score Preview</div>
-              <strong id="livePlayerScore">0</strong>
-            </div>
-          </div>
-
-          <div class="footer-actions">
-            <button class="btn danger" id="undoBtn">Undo Last Dart</button>
-            <button class="btn primary" id="submitTurnBtn">Submit Score</button>
-            <button class="btn" id="resetSessionBtn">Reset Session</button>
-          </div>
-          <div class="notice" id="gameNotice"></div>
+            <aside class="panel rules">
+                <div class="panel-head">
+                    <div>
+                        <div class="kicker">Game Flow</div>
+                        <h2>How Snapshot Works</h2>
+                    </div>
+                </div>
+                <div class="rule-block">
+                    <h3>Flash Point</h3>
+                    <p>
+                        5 rounds, 3 darts each round. A unique random target from 1–20 is assigned to each round (no repeated targets). Select Single, Double, Triple, Quad, or Miss to score on the target. Highest total wins.
+                    </p>
+                </div>
+                <div class="rule-block">
+                    <h3>9 Dart Century</h3>
+                    <p>
+                        9 darts total across 3 turns. Get exactly 100 or as close as possible without going over. Going over 100 is a bust and the player is out. A dart outside the scoring area resets the player's score to zero. Bounce-outs count as miss with no points.
+                    </p>
+                </div>
+                <div class="rule-block">
+                    <h3>Quickdraw</h3>
+                    <p>
+                        3 rounds, 3 darts each round. Standard scoring with fast turn submission. Final standings show each player horizontally with scores for all three games in columns.
+                    </p>
+                </div>
+            </aside>
         </section>
 
-        <aside class="panel score-panel">
-          <div class="panel-head">
-            <div>
-              <div class="kicker">Scoreboard</div>
-              <h2 id="scoreboardTitle">Flash Point Standings</h2>
+        <main id="gameApp" class="hidden">
+            <section class="game-shell">
+                <section class="panel control-panel">
+                    <div class="panel-head">
+                        <div>
+                            <div class="kicker">Live Match</div>
+                            <h2 id="gameTitle">Flash Point</h2>
+                        </div>
+                        <div class="tag" id="boardModeDisplay">Board: Basic</div>
+                    </div>
+
+                    <div class="status-strip">
+                        <div class="stat">
+                            <div class="label">Current Player</div>
+                            <div class="value" id="currentPlayerDisplay">—</div>
+                        </div>
+                        <div class="stat">
+                            <div class="label">Turn</div>
+                            <div class="value" id="turnDisplay">—</div>
+                        </div>
+                        <div class="stat">
+                            <div class="label">Darts This Turn</div>
+                            <div class="value" id="dartsDisplay">0 / 3</div>
+                        </div>
+                        <div class="stat">
+                            <div class="label">Modifier</div>
+                            <div class="value" id="modifierDisplay">Single</div>
+                        </div>
+                    </div>
+
+                    <div id="flashTargetBanner" class="target-banner hidden">
+                        <div>
+                            <div class="kicker">Flash Point Target</div>
+                            <div class="target-number" id="flashTargetNumber">—</div>
+                        </div>
+                        <div class="helper" id="flashTargetHelper">
+                            Click Single, Double, Triple, Quad, or Miss to log each dart directly on the target number.
+                        </div>
+                    </div>
+
+                    <div id="numberSection">
+                        <div class="section-title">
+                            <h3>Choose Number</h3>
+                            <div class="tag" id="selectedBaseDisplay">Base: None</div>
+                        </div>
+                        <div class="button-grid num-grid" id="numberButtons"></div>
+                    </div>
+
+                    <div class="section-title">
+                        <h3>Choose Bed / Action</h3>
+                        <div class="tag" id="selectedThrowPreview">Next: Single —</div>
+                    </div>
+                    <div class="button-grid mod-grid" id="modifierButtons"></div>
+
+                    <div class="section-title">
+                        <h3>Turn Darts</h3>
+                        <div class="tag" id="turnScoreTag">Turn Score: 0</div>
+                    </div>
+                    <div class="throw-list" id="throwList"></div>
+
+                    <div class="live-score">
+                        <div>
+                            <div class="kicker">Current Turn Status</div>
+                            <strong id="turnStatus">Awaiting input</strong>
+                        </div>
+                        <div>
+                            <div class="kicker">Player Score Preview</div>
+                            <strong id="livePlayerScore">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="footer-actions">
+                        <button class="btn danger" id="undoBtn">Undo Last Dart</button>
+                        <button class="btn primary" id="submitTurnBtn">Submit Score</button>
+                        <button class="btn" id="resetSessionBtn">Reset Session</button>
+                    </div>
+
+                    <div class="notice" id="gameNotice"></div>
+                </section>
+
+                <aside class="panel score-panel">
+                    <div class="panel-head">
+                        <div>
+                            <div class="kicker">Scoreboard</div>
+                            <h2 id="scoreboardTitle">Flash Point Standings</h2>
+                        </div>
+                        <div class="tag" id="progressTag">Game 1 of 3</div>
+                    </div>
+                    <div style="overflow:auto;">
+                        <table id="scoreboardTable">
+                            <thead id="scoreboardHead"></thead>
+                            <tbody id="scoreboardBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="notice" id="scoreboardNotice">
+                        Scores update after each submitted turn.
+                    </div>
+                </aside>
+            </section>
+        </main>
+
+        <section id="finalPanel" class="panel hidden" style="margin-top:18px; padding:22px;">
+            <div class="panel-head">
+                <div>
+                    <div class="kicker">Snapshot Complete</div>
+                    <h2>Final Scoreboard</h2>
+                </div>
+                <div class="tag" id="finalWinnerTag">Winner: —</div>
             </div>
-            <div class="tag" id="progressTag">Game 1 of 3</div>
-          </div>
-          <div style="overflow:auto;">
-            <table id="scoreboardTable">
-              <thead id="scoreboardHead"></thead>
-              <tbody id="scoreboardBody"></tbody>
-            </table>
-          </div>
-          <div class="notice" id="scoreboardNotice">
-            Scores update after each submitted turn.
-          </div>
-        </aside>
-      </section>
-    </main>
+            <div style="overflow:auto;">
+                <table id="finalTable">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Flash Point</th>
+                            <th>9 Dart Century</th>
+                            <th>Quickdraw</th>
+                            <th>Total Rank Note</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finalBody"></tbody>
+                </table>
+            </div>
+            <div class="footer-actions">
+                <button class="btn primary" id="newSessionBtn">Start New Session</button>
+            </div>
+        </section>
+    </div>
 
-    <section id="finalPanel" class="panel hidden" style="margin-top:18px; padding:22px;">
-      <div class="panel-head">
-        <div>
-          <div class="kicker">Snapshot Complete</div>
-          <h2>Final Scoreboard</h2>
-        </div>
-        <div class="tag" id="finalWinnerTag">Winner: —</div>
-      </div>
-      <div style="overflow:auto;">
-        <table id="finalTable">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Flash Point</th>
-              <th>9 Dart Century</th>
-              <th>Quickdraw</th>
-              <th>Total Rank Note</th>
-            </tr>
-          </thead>
-          <tbody id="finalBody"></tbody>
-        </table>
-      </div>
-      <div class="footer-actions">
-        <button class="btn primary" id="newSessionBtn">Start New Session</button>
-      </div>
-    </section>
-  </div>
+    <script>
+        const GAME_SEQUENCE = ["flashPoint", "century", "quickdraw"];
+        const GAME_LABELS = {
+            flashPoint: "Flash Point",
+            century: "9 Dart Century",
+            quickdraw: "Quickdraw"
+        };
 
-  <script>
-    const GAME_SEQUENCE = ["flashPoint", "century", "quickdraw"];
-    const GAME_LABELS = {
-      flashPoint: "Flash Point",
-      century: "9 Dart Century",
-      quickdraw: "Quickdraw"
-    };
+        const state = {
+            players: [],
+            boardType: "basic",
+            currentGameIndex: 0,
+            currentPlayerIndex: 0,
+            currentRound: 1,
+            currentTurnThrows: [],
+            selectedModifier: "single",
+            selectedBase: null,
+            flashTargets: [null, null, null, null, null],
+            sessionActive: false
+        };
 
-    const state = {
-      players: [],
-      boardType: "basic",
-      currentGameIndex: 0,
-      currentPlayerIndex: 0,
-      currentRound: 1,
-      currentTurnThrows: [],
-      selectedModifier: "single",
-      selectedBase: null,
-      flashTargets: [null, null, null, null, null],
-      sessionActive: false
-    };
+        const el = {
+            playerNames: document.getElementById("playerNames"),
+            boardType: document.getElementById("boardType"),
+            boardTag: document.getElementById("boardTag"),
+            startBtn: document.getElementById("startBtn"),
+            demoBtn: document.getElementById("demoBtn"),
+            clearSetupBtn: document.getElementById("clearSetupBtn"),
+            setupPanel: document.getElementById("setupPanel"),
+            gameApp: document.getElementById("gameApp"),
+            gameTitle: document.getElementById("gameTitle"),
+            boardModeDisplay: document.getElementById("boardModeDisplay"),
+            currentPlayerDisplay: document.getElementById("currentPlayerDisplay"),
+            turnDisplay: document.getElementById("turnDisplay"),
+            dartsDisplay: document.getElementById("dartsDisplay"),
+            modifierDisplay: document.getElementById("modifierDisplay"),
+            flashTargetBanner: document.getElementById("flashTargetBanner"),
+            flashTargetNumber: document.getElementById("flashTargetNumber"),
+            flashTargetHelper: document.getElementById("flashTargetHelper"),
+            numberSection: document.getElementById("numberSection"),
+            numberButtons: document.getElementById("numberButtons"),
+            modifierButtons: document.getElementById("modifierButtons"),
+            selectedBaseDisplay: document.getElementById("selectedBaseDisplay"),
+            selectedThrowPreview: document.getElementById("selectedThrowPreview"),
+            throwList: document.getElementById("throwList"),
+            turnScoreTag: document.getElementById("turnScoreTag"),
+            turnStatus: document.getElementById("turnStatus"),
+            livePlayerScore: document.getElementById("livePlayerScore"),
+            undoBtn: document.getElementById("undoBtn"),
+            submitTurnBtn: document.getElementById("submitTurnBtn"),
+            resetSessionBtn: document.getElementById("resetSessionBtn"),
+            gameNotice: document.getElementById("gameNotice"),
+            scoreboardTitle: document.getElementById("scoreboardTitle"),
+            progressTag: document.getElementById("progressTag"),
+            scoreboardHead: document.getElementById("scoreboardHead"),
+            scoreboardBody: document.getElementById("scoreboardBody"),
+            scoreboardNotice: document.getElementById("scoreboardNotice"),
+            finalPanel: document.getElementById("finalPanel"),
+            finalBody: document.getElementById("finalBody"),
+            finalWinnerTag: document.getElementById("finalWinnerTag"),
+            newSessionBtn: document.getElementById("newSessionBtn")
+        };
 
-    const el = {
-      playerNames: document.getElementById("playerNames"),
-      boardType: document.getElementById("boardType"),
-      boardTag: document.getElementById("boardTag"),
-      startBtn: document.getElementById("startBtn"),
-      demoBtn: document.getElementById("demoBtn"),
-      clearSetupBtn: document.getElementById("clearSetupBtn"),
-      setupPanel: document.getElementById("setupPanel"),
-      gameApp: document.getElementById("gameApp"),
-      gameTitle: document.getElementById("gameTitle"),
-      boardModeDisplay: document.getElementById("boardModeDisplay"),
-      currentPlayerDisplay: document.getElementById("currentPlayerDisplay"),
-      turnDisplay: document.getElementById("turnDisplay"),
-      dartsDisplay: document.getElementById("dartsDisplay"),
-      modifierDisplay: document.getElementById("modifierDisplay"),
-      flashTargetBanner: document.getElementById("flashTargetBanner"),
-      flashTargetNumber: document.getElementById("flashTargetNumber"),
-      flashTargetHelper: document.getElementById("flashTargetHelper"),
-      numberSection: document.getElementById("numberSection"),
-      numberButtons: document.getElementById("numberButtons"),
-      modifierButtons: document.getElementById("modifierButtons"),
-      selectedBaseDisplay: document.getElementById("selectedBaseDisplay"),
-      selectedThrowPreview: document.getElementById("selectedThrowPreview"),
-      throwList: document.getElementById("throwList"),
-      turnScoreTag: document.getElementById("turnScoreTag"),
-      turnStatus: document.getElementById("turnStatus"),
-      livePlayerScore: document.getElementById("livePlayerScore"),
-      undoBtn: document.getElementById("undoBtn"),
-      submitTurnBtn: document.getElementById("submitTurnBtn"),
-      resetSessionBtn: document.getElementById("resetSessionBtn"),
-      gameNotice: document.getElementById("gameNotice"),
-      scoreboardTitle: document.getElementById("scoreboardTitle"),
-      progressTag: document.getElementById("progressTag"),
-      scoreboardHead: document.getElementById("scoreboardHead"),
-      scoreboardBody: document.getElementById("scoreboardBody"),
-      scoreboardNotice: document.getElementById("scoreboardNotice"),
-      finalPanel: document.getElementById("finalPanel"),
-      finalBody: document.getElementById("finalBody"),
-      finalWinnerTag: document.getElementById("finalWinnerTag"),
-      newSessionBtn: document.getElementById("newSessionBtn")
-    };
-
-    function currentGameKey() {
-      return GAME_SEQUENCE[state.currentGameIndex];
-    }
-
-    function createPlayers(names) {
-      return names.map((name, index) => ({
-        id: index + 1,
-        name,
-        games: {
-          flashPoint: {
-            rounds: Array.from({ length: 5 }, () => ({ target: null, darts: [], score: 0 })),
-            total: 0
-          },
-          century: {
-            turns: Array.from({ length: 3 }, () => ({ darts: [], scoreAfterTurn: 0 })),
-            total: 0,
-            bust: false,
-            resetEvents: 0
-          },
-          quickdraw: {
-            rounds: Array.from({ length: 3 }, () => ({ darts: [], score: 0 })),
-            total: 0
-          }
+        function currentGameKey() {
+            return GAME_SEQUENCE[state.currentGameIndex];
         }
-      }));
-    }
 
-    function setupFlashTargets() {
-      // Create pool of numbers 1-20 and shuffle (Fisher-Yates) to guarantee no repeats
-      const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
-      for (let i = numbers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-      }
+        function createPlayers(names) {
+            return names.map((name, index) => ({
+                id: index + 1,
+                name,
+                games: {
+                    flashPoint: {
+                        rounds: Array.from({ length: 5 }, () => ({ target: null, darts: [], score: 0 })),
+                        total: 0
+                    },
+                    century: {
+                        turns: Array.from({ length: 3 }, () => ({ darts: [], scoreAfterTurn: 0 })),
+                        total: 0,
+                        bust: false,
+                        resetEvents: 0
+                    },
+                    quickdraw: {
+                        rounds: Array.from({ length: 3 }, () => ({ darts: [], score: 0 })),
+                        total: 0
+                    }
+                }
+            }));
+        }
 
-      state.flashTargets = numbers.slice(0, 5);
+        function setupFlashTargets() {
+            const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
+            for (let i = numbers.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+            }
+            state.flashTargets = numbers.slice(0, 5);
+            state.players.forEach(player => {
+                player.games.flashPoint.rounds.forEach((round, idx) => {
+                    round.target = state.flashTargets[idx];
+                });
+            });
+        }
 
-      state.players.forEach(player => {
-        player.games.flashPoint.rounds.forEach((round, idx) => {
-          round.target = state.flashTargets[idx];
-        });
-      });
-    }
+        function startSession() {
+            const names = el.playerNames.value
+                .split("\n")
+                .map(n => n.trim())
+                .filter(Boolean);
 
-    function startSession() {
-      const names = el.playerNames.value
-        .split("\n")
-        .map(n => n.trim())
-        .filter(Boolean);
+            if (names.length === 0) {
+                alert("Please enter at least one player name.");
+                return;
+            }
 
-      if (names.length === 0) {
-        alert("Please enter at least one player name.");
-        return;
-      }
+            state.players = createPlayers(names);
+            state.boardType = el.boardType.value;
+            state.currentGameIndex = 0;
+            state.currentPlayerIndex = 0;
+            state.currentRound = 1;
+            state.currentTurnThrows = [];
+            state.selectedModifier = "single";
+            state.selectedBase = null;
+            state.sessionActive = true;
 
-      state.players = createPlayers(names);
-      state.boardType = el.boardType.value;
-      state.currentGameIndex = 0;
-      state.currentPlayerIndex = 0;
-      state.currentRound = 1;
-      state.currentTurnThrows = [];
-      state.selectedModifier = "single";
-      state.selectedBase = null;
-      state.sessionActive = true;
+            setupFlashTargets();
+            el.gameApp.classList.remove("hidden");
+            el.finalPanel.classList.add("hidden");
 
-      setupFlashTargets();
+            updateBoardTags();
+            renderNumberButtons();
+            renderModifierButtons();
+            updateUI();
 
-      el.gameApp.classList.remove("hidden");
-      el.finalPanel.classList.add("hidden");
-      updateBoardTags();
-      renderNumberButtons();
-      renderModifierButtons();
-      updateUI();
-      window.scrollTo({ top: el.gameApp.offsetTop - 12, behavior: "smooth" });
-    }
+            window.scrollTo({ top: el.gameApp.offsetTop - 12, behavior: "smooth" });
+        }
 
-    function updateBoardTags() {
-      const boardLabel = state.boardType === "quad" ? "Quad" : "Basic";
-      el.boardTag.textContent = `Board: ${boardLabel}`;
-      el.boardModeDisplay.textContent = `Board: ${boardLabel}`;
-    }
+        function updateBoardTags() {
+            const boardLabel = state.boardType === "quad" ? "Quad" : "Basic";
+            el.boardTag.textContent = `Board: ${boardLabel}`;
+            el.boardModeDisplay.textContent = `Board: ${boardLabel}`;
+        }
 
-    function renderNumberButtons() {
-      const game = currentGameKey();
+        function renderNumberButtons() {
+            const game = currentGameKey();
+            if (game === "flashPoint") {
+                el.numberSection.classList.add("hidden");
+                return;
+            }
+            el.numberSection.classList.remove("hidden");
 
-      if (game === "flashPoint") {
-        el.numberSection.classList.add("hidden");
-        return;
-      }
+            const includesBull = game === "century" || game === "quickdraw";
+            el.numberButtons.innerHTML = "";
 
-      el.numberSection.classList.remove("hidden");
-      const includesBull = game === "century" || game === "quickdraw";
-      el.numberButtons.innerHTML = "";
+            for (let i = 1; i <= 20; i++) {
+                const btn = document.createElement("button");
+                btn.className = "score-btn";
+                btn.textContent = i;
+                btn.addEventListener("click", () => {
+                    state.selectedBase = i;
+                    autoRecordIfReady();
+                    updateSelectionUI();
+                });
+                el.numberButtons.appendChild(btn);
+            }
 
-      for (let i = 1; i <= 20; i++) {
-        const btn = document.createElement("button");
-        btn.className = "score-btn";
-        btn.textContent = i;
-        btn.addEventListener("click", () => {
-          state.selectedBase = i;
-          autoRecordIfReady();
-          updateSelectionUI();
-        });
-        el.numberButtons.appendChild(btn);
-      }
+            if (includesBull) {
+                const bullBtn = document.createElement("button");
+                bullBtn.className = "score-btn";
+                bullBtn.textContent = "Bull";
+                bullBtn.addEventListener("click", () => {
+                    state.selectedBase = "bull";
+                    autoRecordIfReady();
+                    updateSelectionUI();
+                });
+                el.numberButtons.appendChild(bullBtn);
+            }
 
-      if (includesBull) {
-        const bullBtn = document.createElement("button");
-        bullBtn.className = "score-btn";
-        bullBtn.textContent = "Bull";
-        bullBtn.addEventListener("click", () => {
-          state.selectedBase = "bull";
-          autoRecordIfReady();
-          updateSelectionUI();
-        });
-        el.numberButtons.appendChild(bullBtn);
-      }
+            updateSelectionUI();
+        }
 
-      updateSelectionUI();
-    }
+        function renderModifierButtons() {
+            const modifiers = ["single", "double", "triple"];
+            if (state.boardType === "quad") modifiers.push("quad");
+            modifiers.push("miss");
 
-    function renderModifierButtons() {
-    const modifiers = ["single", "double", "triple"];
-    if (state.boardType === "quad") modifiers.push("quad");
-    modifiers.push("miss");
+            el.modifierButtons.innerHTML = "";
+            modifiers.forEach(mod => {
+                const btn = document.createElement("button");
+                btn.className = "score-btn";
+                btn.dataset.modifier = mod;
+                btn.textContent = mod.charAt(0).toUpperCase() + mod.slice(1);
+                
+                btn.addEventListener("click", () => {
+                    state.selectedModifier = mod;
+                    updateSelectionUI();
+                });
 
-    el.modifierButtons.innerHTML = "";
-    modifiers.forEach(mod => {
-        const btn = document.createElement("button");
-        btn.className = "score-btn";
-        btn.dataset.modifier = mod;
-        btn.textContent = mod.charAt(0).toUpperCase() + mod.slice(1);
-        
-        btn.addEventListener("click", () => {
-            if (state.currentTurnThrows.length >= getTurnLimit()) return;
+                el.modifierButtons.appendChild(btn);
+            });
+            updateSelectionUI();
+        }
 
-            // Record the throw using the chosen modifier
+        function updateSelectionUI() {
+            if (currentGameKey() !== "flashPoint") {
+                [...el.numberButtons.children].forEach(btn => {
+                    const text = btn.textContent.toLowerCase();
+                    const match = (state.selectedBase === "bull" && text === "bull") || String(state.selectedBase) === btn.textContent;
+                    btn.classList.toggle("active", !!match);
+                });
+            }
+
+            [...el.modifierButtons.children].forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.modifier === state.selectedModifier);
+            });
+
             if (currentGameKey() === "flashPoint") {
-                const currentTarget = state.flashTargets[state.currentRound - 1];
-                recordThrow({ base: currentTarget, modifier: mod });
+                const target = state.flashTargets[state.currentRound - 1];
+                el.selectedThrowPreview.textContent = `Next Dart: ${capitalize(state.selectedModifier)} ${target}`;
             } else {
-                // For Century and Quickdraw
-                if (mod === "miss") {
-                    recordThrow({ base: "miss", modifier: "miss" });
+                el.selectedBaseDisplay.textContent = `Base: ${state.selectedBase === null ? "None" : state.selectedBase === "bull" ? "Bull" : state.selectedBase}`;
+                el.modifierDisplay.textContent = capitalize(state.selectedModifier);
+                el.selectedThrowPreview.textContent = `Next: ${capitalize(state.selectedModifier)} ${state.selectedBase === null ? "—" : state.selectedBase === "bull" ? "Bull" : state.selectedBase}`;
+            }
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function autoRecordIfReady() {
+            if (state.selectedBase !== null && currentGameKey() !== "flashPoint") {
+                const modToUse = state.selectedModifier || "single";
+                recordThrow({ base: state.selectedBase, modifier: modToUse });
+                // Automatically reset modifier back to single after every dart thrown
+                state.selectedModifier = "single";
+            }
+        }
+
+        function getCurrentPlayer() {
+            return state.players[state.currentPlayerIndex];
+        }
+
+        function getTurnLimit() {
+            return 3;
+        }
+
+        function computeThrow(game, base, modifier) {
+            if (modifier === "miss" || base === "miss") return { value: 0, isOutside: false, isMiss: true };
+            let mult = 1;
+            if (modifier === "double") mult = 2;
+            if (modifier === "triple") mult = 3;
+            if (modifier === "quad") mult = 4;
+
+            if (base === "bull") {
+                const bullValue = modifier === "double" ? 50 : 25;
+                return { value: bullValue, isOutside: false, isMiss: false };
+            }
+
+            const num = parseInt(base, 10);
+            if (game === "flashPoint") {
+                const currentTarget = state.flashTargets[state.currentRound - 1];
+                if (num === currentTarget) {
+                    return { value: num * mult, isOutside: false, isMiss: false };
+                }
+                return { value: 0, isOutside: true, isMiss: false };
+            }
+            return { value: num * mult, isOutside: false, isMiss: false };
+        }
+
+        function recordThrow(throwData) {
+            if (state.currentTurnThrows.length >= getTurnLimit()) return;
+            state.currentTurnThrows.push(throwData);
+            state.selectedBase = null;
+            updateUI();
+        }
+
+        function undoLastThrow() {
+            if (state.currentTurnThrows.length > 0) {
+                state.currentTurnThrows.pop();
+                updateUI();
+            }
+        }
+
+        function submitTurn() {
+            const player = getCurrentPlayer();
+            const game = currentGameKey();
+
+            if (game === "flashPoint") {
+                const roundObj = player.games.flashPoint.rounds[state.currentRound - 1];
+                roundObj.darts = [...state.currentTurnThrows];
+                roundObj.score = roundObj.darts.reduce((sum, t) => sum + computeThrow("flashPoint", t.base, t.modifier).value, 0);
+                player.games.flashPoint.total = player.games.flashPoint.rounds.reduce((sum, r) => sum + r.score, 0);
+            } else if (game === "century") {
+                const centuryData = player.games.century;
+                if (!centuryData.bust) {
+                    let runningTotal = (state.currentRound > 1) ? centuryData.turns[state.currentRound - 2].scoreAfterTurn : 0;
+                    for (const t of state.currentTurnThrows) {
+                        if (t.modifier === "miss" || t.base === "miss") {
+                            continue;
+                        }
+                        const res = computeThrow("century", t.base, t.modifier);
+                        runningTotal += res.value;
+                    }
+                    if (runningTotal > 100) {
+                        centuryData.bust = true;
+                        runningTotal = 0;
+                    }
+                    centuryData.turns[state.currentRound - 1] = {
+                        darts: [...state.currentTurnThrows],
+                        scoreAfterTurn: runningTotal
+                    };
+                    centuryData.total = runningTotal;
+                }
+            } else if (game === "quickdraw") {
+                const roundObj = player.games.quickdraw.rounds[state.currentRound - 1];
+                roundObj.darts = [...state.currentTurnThrows];
+                roundObj.score = roundObj.darts.reduce((sum, t) => sum + computeThrow("quickdraw", t.base, t.modifier).value, 0);
+                player.games.quickdraw.total = player.games.quickdraw.rounds.reduce((sum, r) => sum + r.score, 0);
+            }
+
+            advanceTurn();
+        }
+
+        function advanceTurn() {
+            state.currentTurnThrows = [];
+            state.selectedBase = null;
+            state.selectedModifier = "single";
+
+            const totalPlayers = state.players.length;
+            if (state.currentPlayerIndex < totalPlayers - 1) {
+                state.currentPlayerIndex++;
+            } else {
+                state.currentPlayerIndex = 0;
+                const maxRounds = currentGameKey() === "flashPoint" ? 5 : 3;
+                if (state.currentRound < maxRounds) {
+                    state.currentRound++;
                 } else {
-                    // Record with the chosen modifier
-                    recordThrow({ base: state.selectedBase, modifier: mod });
+                    if (state.currentGameIndex < GAME_SEQUENCE.length - 1) {
+                        state.currentGameIndex++;
+                        state.currentRound = 1;
+                        renderNumberButtons();
+                    } else {
+                        finishSession();
+                        return;
+                    }
                 }
             }
-
-            // Reset modifier back to single after every dart thrown
-            state.selectedModifier = "single";
-            updateSelectionUI();
-        });
-
-        el.modifierButtons.appendChild(btn);
-    });
-    updateSelectionUI();
-}
-    function updateSelectionUI() {
-      if (currentGameKey() !== "flashPoint") {
-        [...el.numberButtons.children].forEach(btn => {
-          const text = btn.textContent.toLowerCase();
-          const match = (state.selectedBase === "bull" && text === "bull") || String(state.selectedBase) === btn.textContent;
-          btn.classList.toggle("active", !!match);
-        });
-      }
-
-      [...el.modifierButtons.children].forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.modifier === state.selectedModifier);
-      });
-
-      if (currentGameKey() === "flashPoint") {
-        const target = state.flashTargets[state.currentRound - 1];
-        el.selectedThrowPreview.textContent = `Next Dart: ${capitalize(state.selectedModifier)} ${target}`;
-      } else {
-        el.selectedBaseDisplay.textContent = `Base: ${state.selectedBase === null ? "None" : state.selectedBase === "bull" ? "Bull" : state.selectedBase}`;
-        el.modifierDisplay.textContent = capitalize(state.selectedModifier);
-        el.selectedThrowPreview.textContent = `Next: ${capitalize(state.selectedModifier)} ${state.selectedBase === null ? "—" : state.selectedBase === "bull" ? "Bull" : state.selectedBase}`;
-      }
-    }
-
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    function autoRecordIfReady() {
-      if (state.selectedBase !== null && currentGameKey() !== "flashPoint") {
-        recordThrow({ base: state.selectedBase, modifier: state.selectedModifier });
-      }
-    }
-
-    function getCurrentPlayer() {
-      return state.players[state.currentPlayerIndex];
-    }
-
-    function getTurnLimit() {
-      return 3;
-    }
-
-    function computeThrow(game, base, modifier) {
-      if (modifier === "miss" || base === "miss") return { value: 0, isOutside: false, isMiss: true };
-
-      let mult = 1;
-      if (modifier === "double") mult = 2;
-      if (modifier === "triple") mult = 3;
-      if (modifier === "quad") mult = 4;
-
-      if (base === "bull") {
-        const bullValue = modifier === "double" ? 50 : 25;
-        return { value: bullValue, isOutside: false, isMiss: false };
-      }
-
-      const num = parseInt(base, 10);
-
-      if (game === "flashPoint") {
-        const currentTarget = state.flashTargets[state.currentRound - 1];
-        if (num === currentTarget) {
-          return { value: num * mult, isOutside: false, isMiss: false };
+            updateUI();
         }
-        return { value: 0, isOutside: true, isMiss: false };
-      }
 
-      return { value: num * mult, isOutside: false, isMiss: false };
-    }
+        function finishSession() {
+            el.gameApp.classList.add("hidden");
+            el.finalPanel.classList.remove("hidden");
+            renderFinalStandings();
+            window.scrollTo({ top: el.finalPanel.offsetTop - 12, behavior: "smooth" });
+        }
 
-    function recordThrow(throwData) {
-      if (state.currentTurnThrows.length >= getTurnLimit()) return;
-      state.currentTurnThrows.push(throwData);
-      state.selectedBase = null;
-      updateUI();
-    }
+        function calculateTurnPreview() {
+            const game = currentGameKey();
+            const player = getCurrentPlayer();
 
-    function undoLastThrow() {
-      if (state.currentTurnThrows.length > 0) {
-        state.currentTurnThrows.pop();
-        updateUI();
-      }
-    }
-
-    function submitTurn() {
-      const player = getCurrentPlayer();
-      const game = currentGameKey();
-
-      if (game === "flashPoint") {
-        const roundObj = player.games.flashPoint.rounds[state.currentRound - 1];
-        roundObj.darts = [...state.currentTurnThrows];
-        roundObj.score = roundObj.darts.reduce((sum, t) => sum + computeThrow("flashPoint", t.base, t.modifier).value, 0);
-        player.games.flashPoint.total = player.games.flashPoint.rounds.reduce((sum, r) => sum + r.score, 0);
-      } else if (game === "century") {
-        const centuryData = player.games.century;
-        if (!centuryData.bust) {
-          let runningTotal = (state.currentRound > 1) ? centuryData.turns[state.currentRound - 2].scoreAfterTurn : 0;
-
-          for (const t of state.currentTurnThrows) {
-            if (t.modifier === "miss" || t.base === "miss") {
-              continue;
+            if (game === "flashPoint") {
+                return state.currentTurnThrows.reduce((sum, t) => sum + computeThrow("flashPoint", t.base, t.modifier).value, 0);
             }
-            const res = computeThrow("century", t.base, t.modifier);
-            runningTotal += res.value;
-          }
-
-          if (runningTotal > 100) {
-            centuryData.bust = true;
-            runningTotal = 0;
-          }
-
-          centuryData.turns[state.currentRound - 1] = {
-            darts: [...state.currentTurnThrows],
-            scoreAfterTurn: runningTotal
-          };
-          centuryData.total = runningTotal;
-        }
-      } else if (game === "quickdraw") {
-        const roundObj = player.games.quickdraw.rounds[state.currentRound - 1];
-        roundObj.darts = [...state.currentTurnThrows];
-        roundObj.score = roundObj.darts.reduce((sum, t) => sum + computeThrow("quickdraw", t.base, t.modifier).value, 0);
-        player.games.quickdraw.total = player.games.quickdraw.rounds.reduce((sum, r) => sum + r.score, 0);
-      }
-
-      advanceTurn();
-    }
-
-    function advanceTurn() {
-      state.currentTurnThrows = [];
-      state.selectedBase = null;
-      state.selectedModifier = "single";
-
-      const totalPlayers = state.players.length;
-
-      if (state.currentPlayerIndex < totalPlayers - 1) {
-        state.currentPlayerIndex++;
-      } else {
-        state.currentPlayerIndex = 0;
-        const maxRounds = currentGameKey() === "flashPoint" ? 5 : 3;
-
-        if (state.currentRound < maxRounds) {
-          state.currentRound++;
-        } else {
-          if (state.currentGameIndex < GAME_SEQUENCE.length - 1) {
-            state.currentGameIndex++;
-            state.currentRound = 1;
-            renderNumberButtons();
-          } else {
-            finishSession();
-            return;
-          }
-        }
-      }
-
-      updateUI();
-    }
-
-    function finishSession() {
-      el.gameApp.classList.add("hidden");
-      el.finalPanel.classList.remove("hidden");
-      renderFinalStandings();
-      window.scrollTo({ top: el.finalPanel.offsetTop - 12, behavior: "smooth" });
-    }
-
-    function calculateTurnPreview() {
-      const game = currentGameKey();
-      const player = getCurrentPlayer();
-
-      if (game === "flashPoint") {
-        return state.currentTurnThrows.reduce((sum, t) => sum + computeThrow("flashPoint", t.base, t.modifier).value, 0);
-      }
-
-      if (game === "century") {
-        const cData = player.games.century;
-        if (cData.bust) return 0;
-
-        let startScore = (state.currentRound > 1) ? cData.turns[state.currentRound - 2].scoreAfterTurn : 0;
-        let score = startScore;
-
-        for (const t of state.currentTurnThrows) {
-          if (t.modifier === "miss" || t.base === "miss") continue;
-          score += computeThrow("century", t.base, t.modifier).value;
+            if (game === "century") {
+                const cData = player.games.century;
+                if (cData.bust) return 0;
+                let startScore = (state.currentRound > 1) ? cData.turns[state.currentRound - 2].scoreAfterTurn : 0;
+                let score = startScore;
+                for (const t of state.currentTurnThrows) {
+                    if (t.modifier === "miss" || t.base === "miss") continue;
+                    score += computeThrow("century", t.base, t.modifier).value;
+                }
+                return score;
+            }
+            if (game === "quickdraw") {
+                return state.currentTurnThrows.reduce((sum, t) => sum + computeThrow("quickdraw", t.base, t.modifier).value, 0);
+            }
+            return 0;
         }
 
-        return score;
-      }
+        function updateUI() {
+            const game = currentGameKey();
+            const player = getCurrentPlayer();
 
-      if (game === "quickdraw") {
-        return state.currentTurnThrows.reduce((sum, t) => sum + computeThrow("quickdraw", t.base, t.modifier).value, 0);
-      }
+            el.gameTitle.textContent = GAME_LABELS[game];
+            el.currentPlayerDisplay.textContent = player ? player.name : "—";
+            el.turnDisplay.textContent = `Round ${state.currentRound}`;
+            el.dartsDisplay.textContent = `${state.currentTurnThrows.length} / ${getTurnLimit()}`;
 
-      return 0;
-    }
+            if (game === "flashPoint") {
+                el.flashTargetBanner.classList.remove("hidden");
+                const currentTarget = state.flashTargets[state.currentRound - 1];
+                el.flashTargetNumber.textContent = currentTarget;
+            } else {
+                el.flashTargetBanner.classList.add("hidden");
+            }
 
-    function updateUI() {
-      const game = currentGameKey();
-      const player = getCurrentPlayer();
+            renderThrowList();
+            updateSelectionUI();
 
-      el.gameTitle.textContent = GAME_LABELS[game];
-      el.currentPlayerDisplay.textContent = player ? player.name : "—";
-      el.turnDisplay.textContent = `Round ${state.currentRound}`;
-      el.dartsDisplay.textContent = `${state.currentTurnThrows.length} / ${getTurnLimit()}`;
+            const previewScore = calculateTurnPreview();
+            el.turnScoreTag.textContent = `Turn Score: ${previewScore}`;
+            el.livePlayerScore.textContent = previewScore;
 
-      if (game === "flashPoint") {
-        el.flashTargetBanner.classList.remove("hidden");
-        const currentTarget = state.flashTargets[state.currentRound - 1];
-        el.flashTargetNumber.textContent = currentTarget;
-      } else {
-        el.flashTargetBanner.classList.add("hidden");
-      }
+            if (game === "century" && player.games.century.bust) {
+                el.turnStatus.textContent = "BUSTED (Out of Century)";
+            } else if (state.currentTurnThrows.length === getTurnLimit()) {
+                el.turnStatus.textContent = "Turn Complete — Ready to Submit";
+            } else {
+                el.turnStatus.textContent = `Throw ${state.currentTurnThrows.length + 1} of ${getTurnLimit()}`;
+            }
 
-      renderThrowList();
-      updateSelectionUI();
-
-      const previewScore = calculateTurnPreview();
-      el.turnScoreTag.textContent = `Turn Score: ${previewScore}`;
-      el.livePlayerScore.textContent = previewScore;
-
-      if (game === "century" && player.games.century.bust) {
-        el.turnStatus.textContent = "BUSTED (Out of Century)";
-      } else if (state.currentTurnThrows.length === getTurnLimit()) {
-        el.turnStatus.textContent = "Turn Complete — Ready to Submit";
-      } else {
-        el.turnStatus.textContent = `Throw ${state.currentTurnThrows.length + 1} of ${getTurnLimit()}`;
-      }
-
-      renderScoreboard();
-    }
-
-    function renderThrowList() {
-      el.throwList.innerHTML = "";
-      state.currentTurnThrows.forEach((t, i) => {
-        const chip = document.createElement("div");
-        chip.className = "throw-chip";
-        const game = currentGameKey();
-        const res = computeThrow(game, t.base, t.modifier);
-
-        if (t.modifier === "miss" || t.base === "miss") {
-          chip.className += " bad";
-          chip.innerHTML = `Dart ${i + 1}: Miss <small>(0 pts)</small>`;
-        } else if (res.isOutside) {
-          chip.className += " bad";
-          chip.innerHTML = `Dart ${i + 1}: ${capitalize(t.modifier)} ${t.base} <small>(Off Target / 0 pts)</small>`;
-        } else {
-          chip.className += " good";
-          chip.innerHTML = `Dart ${i + 1}: ${capitalize(t.modifier)} ${t.base} <small>(+${res.value} pts)</small>`;
+            renderScoreboard();
         }
 
-        el.throwList.appendChild(chip);
-      });
-    }
+        function renderThrowList() {
+            el.throwList.innerHTML = "";
+            state.currentTurnThrows.forEach((t, i) => {
+                const chip = document.createElement("div");
+                chip.className = "throw-chip";
+                const game = currentGameKey();
+                const res = computeThrow(game, t.base, t.modifier);
 
-    function renderScoreboard() {
-      const game = currentGameKey();
-      el.scoreboardTitle.textContent = `${GAME_LABELS[game]} Standings`;
-      el.progressTag.textContent = `Game ${state.currentGameIndex + 1} of 3`;
+                if (t.modifier === "miss" || t.base === "miss") {
+                    chip.className += " bad";
+                    chip.innerHTML = `Dart ${i + 1}: Miss <small>(0 pts)</small>`;
+                } else if (res.isOutside) {
+                    chip.className += " bad";
+                    chip.innerHTML = `Dart ${i + 1}: ${capitalize(t.modifier)} ${t.base} <small>(Off Target / 0 pts)</small>`;
+                } else {
+                    chip.className += " good";
+                    chip.innerHTML = `Dart ${i + 1}: ${capitalize(t.modifier)} ${t.base} <small>(+${res.value} pts)</small>`;
+                }
+                el.throwList.appendChild(chip);
+            });
+        }
 
-      el.scoreboardHead.innerHTML = "";
-      el.scoreboardBody.innerHTML = "";
+        function renderScoreboard() {
+            const game = currentGameKey();
+            el.scoreboardTitle.textContent = `${GAME_LABELS[game]} Standings`;
+            el.progressTag.textContent = `Game ${state.currentGameIndex + 1} of 3`;
 
-      if (game === "flashPoint") {
-        el.scoreboardHead.innerHTML = `
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>R1</th>
-            <th>R2</th>
-            <th>R3</th>
-            <th>R4</th>
-            <th>R5</th>
-            <th>Total</th>
-          </tr>
-        `;
+            el.scoreboardHead.innerHTML = "";
+            el.scoreboardBody.innerHTML = "";
 
-        const sorted = [...state.players].sort((a, b) => b.games.flashPoint.total - a.games.flashPoint.total);
+            if (game === "flashPoint") {
+                el.scoreboardHead.innerHTML = `
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>R1</th>
+                        <th>R2</th>
+                        <th>R3</th>
+                        <th>R4</th>
+                        <th>R5</th>
+                        <th>Total</th>
+                    </tr>
+                `;
+                const sorted = [...state.players].sort((a, b) => b.games.flashPoint.total - a.games.flashPoint.total);
+                sorted.forEach((p, idx) => {
+                    const row = document.createElement("tr");
+                    const roundsHtml = p.games.flashPoint.rounds
+                        .map(r => `<td>${r.score}</td>`)
+                        .join("");
+                    row.innerHTML = `
+                        <td class="rank">#${idx + 1}</td>
+                        <td><strong>${p.name}</strong></td>
+                        ${roundsHtml}
+                        <td><strong>${p.games.flashPoint.total}</strong></td>
+                    `;
+                    el.scoreboardBody.appendChild(row);
+                });
+            } else if (game === "century") {
+                el.scoreboardHead.innerHTML = `
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Turn 1</th>
+                        <th>Turn 2</th>
+                        <th>Turn 3</th>
+                        <th>Status / Score</th>
+                    </tr>
+                `;
+                const sorted = [...state.players].sort((a, b) => {
+                    if (a.games.century.bust && !b.games.century.bust) return 1;
+                    if (!a.games.century.bust && b.games.century.bust) return -1;
+                    return Math.abs(100 - a.games.century.total) - Math.abs(100 - b.games.century.total);
+                });
+                sorted.forEach((p, idx) => {
+                    const cData = p.games.century;
+                    const t1 = cData.turns[0].darts.length ? cData.turns[0].scoreAfterTurn : "—";
+                    const t2 = cData.turns[1].darts.length ? cData.turns[1].scoreAfterTurn : "—";
+                    const t3 = cData.turns[2].darts.length ? cData.turns[2].scoreAfterTurn : "—";
+                    const statusText = cData.bust ? `<span class="bust">BUST</span>` : `<strong>${cData.total}</strong>`;
 
-        sorted.forEach((p, idx) => {
-          const row = document.createElement("tr");
-          const roundsHtml = p.games.flashPoint.rounds
-            .map(r => `<td>${r.score}</td>`)
-            .join("");
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td class="rank">#${idx + 1}</td>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${t1}</td>
+                        <td>${t2}</td>
+                        <td>${t3}</td>
+                        <td>${statusText}</td>
+                    `;
+                    el.scoreboardBody.appendChild(row);
+                });
+            } else if (game === "quickdraw") {
+                el.scoreboardHead.innerHTML = `
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>R1</th>
+                        <th>R2</th>
+                        <th>R3</th>
+                        <th>Total</th>
+                    </tr>
+                `;
+                const sorted = [...state.players].sort((a, b) => b.games.quickdraw.total - a.games.quickdraw.total);
+                sorted.forEach((p, idx) => {
+                    const row = document.createElement("tr");
+                    const roundsHtml = p.games.quickdraw.rounds
+                        .map(r => `<td>${r.score}</td>`)
+                        .join("");
+                    row.innerHTML = `
+                        <td class="rank">#${idx + 1}</td>
+                        <td><strong>${p.name}</strong></td>
+                        ${roundsHtml}
+                        <td><strong>${p.games.quickdraw.total}</strong></td>
+                    `;
+                    el.scoreboardBody.appendChild(row);
+                });
+            }
+        }
 
-          row.innerHTML = `
-            <td class="rank">#${idx + 1}</td>
-            <td><strong>${p.name}</strong></td>
-            ${roundsHtml}
-            <td><strong>${p.games.flashPoint.total}</strong></td>
-          `;
-          el.scoreboardBody.appendChild(row);
+        function renderFinalStandings() {
+            el.finalBody.innerHTML = "";
+            const playerSummaries = state.players.map(p => {
+                return {
+                    name: p.name,
+                    flash: p.games.flashPoint.total,
+                    century: p.games.century.bust ? "BUST (0)" : p.games.century.total,
+                    centuryNum: p.games.century.bust ? -1 : p.games.century.total,
+                    quickdraw: p.games.quickdraw.total,
+                    grandTotal: p.games.flashPoint.total + (p.games.century.bust ? 0 : p.games.century.total) + p.games.quickdraw.total
+                };
+            });
+
+            playerSummaries.sort((a, b) => b.grandTotal - a.grandTotal);
+
+            if (playerSummaries.length > 0) {
+                el.finalWinnerTag.textContent = `Winner: ${playerSummaries[0].name} (${playerSummaries[0].grandTotal} pts)`;
+            }
+
+            playerSummaries.forEach((s, idx) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><strong>${s.name}</strong> ${idx === 0 ? '<span class="winner">★ WINNER</span>' : ""}</td>
+                    <td>${s.flash}</td>
+                    <td>${s.century}</td>
+                    <td>${s.quickdraw}</td>
+                    <td><strong>${s.grandTotal} pts</strong> (Rank #${idx + 1})</td>
+                `;
+                el.finalBody.appendChild(row);
+            });
+        }
+
+        el.startBtn.addEventListener("click", startSession);
+        el.demoBtn.addEventListener("click", () => {
+            el.playerNames.value = "Alex\nJordan\nSam";
         });
-      } else if (game === "century") {
-        el.scoreboardHead.innerHTML = `
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Turn 1</th>
-            <th>Turn 2</th>
-            <th>Turn 3</th>
-            <th>Status / Score</th>
-          </tr>
-        `;
-
-        const sorted = [...state.players].sort((a, b) => {
-          if (a.games.century.bust && !b.games.century.bust) return 1;
-          if (!a.games.century.bust && b.games.century.bust) return -1;
-          return Math.abs(100 - a.games.century.total) - Math.abs(100 - b.games.century.total);
+        el.clearSetupBtn.addEventListener("click", () => {
+            el.playerNames.value = "";
         });
-
-        sorted.forEach((p, idx) => {
-          const cData = p.games.century;
-          const t1 = cData.turns[0].darts.length ? cData.turns[0].scoreAfterTurn : "—";
-          const t2 = cData.turns[1].darts.length ? cData.turns[1].scoreAfterTurn : "—";
-          const t3 = cData.turns[2].darts.length ? cData.turns[2].scoreAfterTurn : "—";
-          const statusText = cData.bust ? `<span class="bust">BUST</span>` : `<strong>${cData.total}</strong>`;
-
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td class="rank">#${idx + 1}</td>
-            <td><strong>${p.name}</strong></td>
-            <td>${t1}</td>
-            <td>${t2}</td>
-            <td>${t3}</td>
-            <td>${statusText}</td>
-          `;
-          el.scoreboardBody.appendChild(row);
+        el.undoBtn.addEventListener("click", undoLastThrow);
+        el.submitTurnBtn.addEventListener("click", submitTurn);
+        el.resetSessionBtn.addEventListener("click", () => {
+            if (confirm("Are you sure you want to reset the current session?")) {
+                el.gameApp.classList.add("hidden");
+                el.finalPanel.classList.add("hidden");
+                window.scrollTo({ top: el.setupPanel.offsetTop - 12, behavior: "smooth" });
+            }
         });
-      } else if (game === "quickdraw") {
-        el.scoreboardHead.innerHTML = `
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>R1</th>
-            <th>R2</th>
-            <th>R3</th>
-            <th>Total</th>
-          </tr>
-        `;
-
-        const sorted = [...state.players].sort((a, b) => b.games.quickdraw.total - a.games.quickdraw.total);
-
-        sorted.forEach((p, idx) => {
-          const row = document.createElement("tr");
-          const roundsHtml = p.games.quickdraw.rounds
-            .map(r => `<td>${r.score}</td>`)
-            .join("");
-
-          row.innerHTML = `
-            <td class="rank">#${idx + 1}</td>
-            <td><strong>${p.name}</strong></td>
-            ${roundsHtml}
-            <td><strong>${p.games.quickdraw.total}</strong></td>
-          `;
-          el.scoreboardBody.appendChild(row);
+        el.newSessionBtn.addEventListener("click", () => {
+            el.finalPanel.classList.add("hidden");
+            el.gameApp.classList.add("hidden");
+            window.scrollTo({ top: el.setupPanel.offsetTop - 12, behavior: "smooth" });
         });
-      }
-    }
-
-    function renderFinalStandings() {
-      el.finalBody.innerHTML = "";
-
-      const playerSummaries = state.players.map(p => {
-        return {
-          name: p.name,
-          flash: p.games.flashPoint.total,
-          century: p.games.century.bust ? "BUST (0)" : p.games.century.total,
-          centuryNum: p.games.century.bust ? -1 : p.games.century.total,
-          quickdraw: p.games.quickdraw.total,
-          grandTotal: p.games.flashPoint.total + (p.games.century.bust ? 0 : p.games.century.total) + p.games.quickdraw.total
-        };
-      });
-
-      playerSummaries.sort((a, b) => b.grandTotal - a.grandTotal);
-
-      if (playerSummaries.length > 0) {
-        el.finalWinnerTag.textContent = `Winner: ${playerSummaries[0].name} (${playerSummaries[0].grandTotal} pts)`;
-      }
-
-      playerSummaries.forEach((s, idx) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><strong>${s.name}</strong> ${idx === 0 ? '<span class="winner">★ WINNER</span>' : ""}</td>
-          <td>${s.flash}</td>
-          <td>${s.century}</td>
-          <td>${s.quickdraw}</td>
-          <td><strong>${s.grandTotal} pts</strong> (Rank #${idx + 1})</td>
-        `;
-        el.finalBody.appendChild(row);
-      });
-    }
-
-    el.startBtn.addEventListener("click", startSession);
-
-    el.demoBtn.addEventListener("click", () => {
-      el.playerNames.value = "Alex\nJordan\nSam";
-    });
-
-    el.clearSetupBtn.addEventListener("click", () => {
-      el.playerNames.value = "";
-    });
-
-    el.undoBtn.addEventListener("click", undoLastThrow);
-    el.submitTurnBtn.addEventListener("click", submitTurn);
-
-    el.resetSessionBtn.addEventListener("click", () => {
-      if (confirm("Are you sure you want to reset the current session?")) {
-        el.gameApp.classList.add("hidden");
-        el.finalPanel.classList.add("hidden");
-        window.scrollTo({ top: el.setupPanel.offsetTop - 12, behavior: "smooth" });
-      }
-    });
-
-    el.newSessionBtn.addEventListener("click", () => {
-      el.finalPanel.classList.add("hidden");
-      el.gameApp.classList.add("hidden");
-      window.scrollTo({ top: el.setupPanel.offsetTop - 12, behavior: "smooth" });
-    });
-  </script>
+    </script>
 </body>
 </html>
