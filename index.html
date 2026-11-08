@@ -933,46 +933,43 @@
     }
 
     function renderModifierButtons() {
-      const modifiers = ["single", "double", "triple"];
-      if (state.boardType === "quad") modifiers.push("quad");
-      modifiers.push("miss");
+    const modifiers = ["single", "double", "triple"];
+    if (state.boardType === "quad") modifiers.push("quad");
+    modifiers.push("miss");
 
-      el.modifierButtons.innerHTML = "";
-
-      modifiers.forEach(mod => {
+    el.modifierButtons.innerHTML = "";
+    modifiers.forEach(mod => {
         const btn = document.createElement("button");
         btn.className = "score-btn";
         btn.dataset.modifier = mod;
         btn.textContent = mod.charAt(0).toUpperCase() + mod.slice(1);
-
+        
         btn.addEventListener("click", () => {
-          if (state.currentTurnThrows.length >= getTurnLimit()) return;
+            if (state.currentTurnThrows.length >= getTurnLimit()) return;
 
-          if (mod === "miss") {
-            recordThrow({ base: "miss", modifier: "miss" });
+            // Record the throw using the chosen modifier
+            if (currentGameKey() === "flashPoint") {
+                const currentTarget = state.flashTargets[state.currentRound - 1];
+                recordThrow({ base: currentTarget, modifier: mod });
+            } else {
+                // For Century and Quickdraw
+                if (mod === "miss") {
+                    recordThrow({ base: "miss", modifier: "miss" });
+                } else {
+                    // Record with the chosen modifier
+                    recordThrow({ base: state.selectedBase, modifier: mod });
+                }
+            }
+
+            // Reset modifier back to single after every dart thrown
             state.selectedModifier = "single";
             updateSelectionUI();
-            return;
-          }
-
-          state.selectedModifier = mod;
-
-          if (currentGameKey() === "flashPoint") {
-            const currentTarget = state.flashTargets[state.currentRound - 1];
-            recordThrow({ base: currentTarget, modifier: mod });
-          } else {
-            autoRecordIfReady();
-          }
-
-          updateSelectionUI();
         });
 
         el.modifierButtons.appendChild(btn);
-      });
-
-      updateSelectionUI();
-    }
-
+    });
+    updateSelectionUI();
+}
     function updateSelectionUI() {
       if (currentGameKey() !== "flashPoint") {
         [...el.numberButtons.children].forEach(btn => {
