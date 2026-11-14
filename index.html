@@ -174,7 +174,7 @@
     /* Game Play View */
     .game-layout {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 360px;
       gap: 20px;
     }
 
@@ -227,6 +227,23 @@
       background: rgba(255, 106, 0, 0.2);
       border-color: var(--accent);
       color: var(--accent-2);
+    }
+
+    .dart-preview-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .dart-slot {
+      flex: 1;
+      padding: 10px;
+      background: var(--bg-soft);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-weight: 800;
+      color: var(--accent-2);
+      font-size: 1.05rem;
     }
 
     /* Final Standings & League Submission */
@@ -326,6 +343,12 @@
 
       <div class="game-layout">
         <div>
+          <div class="dart-preview-bar">
+            <div class="dart-slot" id="slot0">-</div>
+            <div class="dart-slot" id="slot1">-</div>
+            <div class="dart-slot" id="slot2">-</div>
+          </div>
+
           <div class="mult-bar">
             <button type="button" class="mult-btn active" data-mult="1">1× Single</button>
             <button type="button" class="mult-btn" data-mult="2">2× Double</button>
@@ -342,7 +365,7 @@
         </div>
 
         <div style="background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px;">
-          <h3 style="margin-bottom: 10px; color: var(--accent-2);">Live Standings</h3>
+          <h3 style="margin-bottom: 10px; color: var(--accent-2);">Live Standings & Darts</h3>
           <div id="liveStandingsList" style="display: grid; gap: 10px;"></div>
         </div>
       </div>
@@ -408,13 +431,12 @@
     const state = {
       players: [],
       boardType: "standard",
-      currentGameIdx: 0, // 0: Flash Point, 1: Century, 2: Quickdraw
+      currentGameIdx: 0,
       currentPlayerIdx: 0,
       turnDarts: [],
       activeMult: 1,
       flashTargets: [],
-      roundIdx: 0,
-      history: []
+      roundIdx: 0
     };
 
     const gamesMeta = [
@@ -527,7 +549,6 @@
       state.boardType = document.getElementById("boardTypeSelect").value;
       document.getElementById("quadMultBtn").classList.toggle("hidden", state.boardType !== "quad");
 
-      // Generate 5 random unique flash targets (1-20)
       const pool = Array.from({length: 20}, (_, i) => i + 1);
       state.flashTargets = [];
       for (let i = 0; i < 5; i++) {
@@ -537,10 +558,11 @@
 
       state.players = rawNames.map(name => ({
         name,
+        dartsThrown: 0,
         games: {
-          flashPoint: { total: 0, rounds: [] },
+          flashPoint: { total: 0 },
           century: { total: 0, bust: false, dartsThrown: 0 },
-          quickdraw: { total: 0, rounds: [] }
+          quickdraw: { total: 0 }
         }
       }));
 
@@ -549,7 +571,6 @@
       state.roundIdx = 0;
       state.turnDarts = [];
       state.activeMult = 1;
-      state.history = [];
 
       document.getElementById("setupPanel").classList.add("hidden");
       document.getElementById("gamePanel").classList.remove("hidden");
@@ -602,6 +623,13 @@
       renderGameUI();
     }
 
+    function undoLastDart() {
+      if (state.turnDarts.length > 0) {
+        state.turnDarts.pop();
+        renderGameUI();
+      }
+    }
+
     function updateMultButtons() {
       document.querySelectorAll(".mult-btn").forEach(b => {
         b.classList.toggle("active", parseInt(b.dataset.mult, 10) === state.activeMult);
@@ -615,6 +643,8 @@
       });
     });
 
+    document.getElementById("undoBtn").addEventListener("click", undoLastDart);
+
     document.getElementById("submitTurnBtn").addEventListener("click", () => {
       if (state.turnDarts.length === 0) {
         alert("Please throw at least one dart.");
@@ -623,6 +653,9 @@
 
       const player = state.players[state.currentPlayerIdx];
       const currentGame = gamesMeta[state.currentGameIdx].id;
+      const turnDartsCount = state.turnDarts.length;
+
+      player.dartsThrown += turnDartsCount;
 
       if (currentGame === "flashPoint") {
         const target = state.flashTargets[state.roundIdx];
@@ -639,7 +672,7 @@
           let newTotal = player.games.century.total + turnSum;
           if (newTotal > 100) {
             player.games.century.bust = true;
-            player.games.century.total = 0;
+            player.games.century.total = 0; // Bust records 0 score
           } else {
             player.games.century.total = newTotal;
           }
@@ -694,14 +727,22 @@
         document.getElementById("activePlayerLabel").textContent = `Quick Draw Round ${state.roundIdx + 1}`;
       }
 
+      for (let i = 0; i < 3; i++) {
+        const slotEl = document.getElementById(`slot${i}`);
+        slotEl.textContent = state.turnDarts[i] ? state.turnDarts[i].label : "-";
+      }
+
       const standingsEl = document.getElementById("liveStandingsList");
       standingsEl.innerHTML = state.players.map((p, idx) => {
         const isCurrent = idx === state.currentPlayerIdx;
-        const score = meta.id === "flashPoint" ? p.games.flashPoint.total : meta.id === "century" ? (p.games.century.bust ? "BUST" : p.games.century.total) : p.games.quickdraw.total;
+        const score = meta.id === "flashPoint" ? p.games.flashPoint.total : meta.id === "century" ? (p.games.century.bust ? "BUST (0 pts)" : p.games.century.total) : p.games.quickdraw.total;
         return `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: ${isCurrent ? 'rgba(255,106,0,0.15)' : 'rgba(255,255,255,0.02)'}; border-radius: 8px; border: 1px solid ${isCurrent ? 'var(--accent)' : 'var(--line)'};">
-            <span style="font-weight: 700;">${p.name}</span>
-            <span style="font-family: 'Bebas Neue'; font-size: 1.2rem; color: var(--accent-2);">${score} pts</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: ${isCurrent ? 'rgba(255,106,0,0.15)' : 'rgba(255,255,255,0.02)'}; border-radius: 8px; border: 1px solid ${isCurrent ? 'var(--accent)' : 'var(--line)'};">
+            <div>
+              <div style="font-weight: 700;">${p.name}</div>
+              <div style="font-size: 0.78rem; color: var(--muted);">Darts Thrown: ${p.dartsThrown}</div>
+            </div>
+            <span style="font-family: 'Bebas Neue'; font-size: 1.3rem; color: var(--accent-2);">${score} pts</span>
           </div>
         `;
       }).join("");
