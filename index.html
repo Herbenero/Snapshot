@@ -190,6 +190,32 @@
       text-transform: uppercase;
     }
 
+    /* Large Flash Point Target Banner */
+    .flash-target-banner {
+      background: linear-gradient(135deg, rgba(255, 106, 0, 0.18), rgba(255, 200, 87, 0.08));
+      border: 2px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(255, 106, 0, 0.15);
+    }
+    .flash-target-banner .label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .flash-target-banner .number {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 4.5rem;
+      line-height: 1;
+      color: var(--accent-2);
+      margin-top: 2px;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+
     .keypad {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -339,6 +365,12 @@
           <div style="font-size: 0.85rem; color: var(--muted);" id="activePlayerLabel">Active Thrower</div>
           <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-2);" id="activePlayerName">-</div>
         </div>
+      </div>
+
+      <!-- Large Centered Flash Point Target Banner -->
+      <div class="flash-target-banner hidden" id="flashTargetBanner">
+        <div class="label">Current Target Number</div>
+        <div class="number" id="flashTargetNumber">20</div>
       </div>
 
       <div class="game-layout">
@@ -561,7 +593,7 @@
         dartsThrown: 0,
         games: {
           flashPoint: { total: 0 },
-          century: { total: 0, bust: false, dartsThrown: 0 },
+          century: { total: 0, bust: false, dartsThrown: 0, finished: false },
           quickdraw: { total: 0 }
         }
       }));
@@ -667,14 +699,18 @@
         });
         player.games.flashPoint.total += roundScore;
       } else if (currentGame === "century") {
-        if (!player.games.century.bust) {
+        if (!player.games.century.bust && !player.games.century.finished) {
           let turnSum = state.turnDarts.reduce((acc, d) => acc + d.raw, 0);
           let newTotal = player.games.century.total + turnSum;
           if (newTotal > 100) {
             player.games.century.bust = true;
-            player.games.century.total = 0; // Bust records 0 score
+            player.games.century.total = 0;
+            player.games.century.finished = true;
           } else {
             player.games.century.total = newTotal;
+            if (newTotal === 100 || state.roundIdx >= 2) {
+              player.games.century.finished = true;
+            }
           }
         }
       } else if (currentGame === "quickdraw") {
@@ -687,10 +723,23 @@
     });
 
     function advanceTurn() {
+      const currentGame = gamesMeta[state.currentGameIdx].id;
+
+      // If playing 9 Dart Century, check if ALL players have finished or busted
+      if (currentGame === "century") {
+        const allFinished = state.players.every(p => p.games.century.finished || p.games.century.bust);
+        if (allFinished) {
+          // Advance directly to Quickdraw (Index 2)
+          state.currentGameIdx = 2;
+          state.roundIdx = 0;
+          renderGameUI();
+          return;
+        }
+      }
+
       state.currentPlayerIdx++;
       if (state.currentPlayerIdx >= state.players.length) {
         state.currentPlayerIdx = 0;
-        const currentGame = gamesMeta[state.currentGameIdx].id;
         if (currentGame === "flashPoint" || currentGame === "quickdraw") {
           state.roundIdx++;
           if (state.roundIdx >= 3) {
@@ -719,12 +768,18 @@
       document.getElementById("currentGameTitle").textContent = meta.title;
       document.getElementById("activePlayerName").textContent = state.players[state.currentPlayerIdx].name;
 
+      const flashBanner = document.getElementById("flashTargetBanner");
       if (meta.id === "flashPoint") {
-        document.getElementById("activePlayerLabel").textContent = `Flash Point Target: ${state.flashTargets[state.roundIdx]}`;
-      } else if (meta.id === "century") {
-        document.getElementById("activePlayerLabel").textContent = `9 Dart Century (Target: 100)`;
+        flashBanner.classList.remove("hidden");
+        document.getElementById("flashTargetNumber").textContent = state.flashTargets[state.roundIdx];
+        document.getElementById("activePlayerLabel").textContent = `Active Thrower`;
       } else {
-        document.getElementById("activePlayerLabel").textContent = `Quick Draw Round ${state.roundIdx + 1}`;
+        flashBanner.classList.add("hidden");
+        if (meta.id === "century") {
+          document.getElementById("activePlayerLabel").textContent = `9 Dart Century (Target: 100)`;
+        } else {
+          document.getElementById("activePlayerLabel").textContent = `Quick Draw Round ${state.roundIdx + 1}`;
+        }
       }
 
       for (let i = 0; i < 3; i++) {
